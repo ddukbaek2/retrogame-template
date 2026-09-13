@@ -1,0 +1,33 @@
+{
+	"name": "retrogame-template",
+	"version": "0.1.0",
+	"description": "옛 PC 게임의 결로 만드는 게임 틀. 1 ~ 8 비트 화면, 브라운관, 방향키와 확인 취소만으로 노는 게임을 만듭니다. (vanilla.js 기반)",
+	"main": "src/main.js",
+	"scripts": {
+		"postinstall": "git submodule update --init --recursive",
+		"build": "node libs/vanilla.js/tools/project.cjs build --script src/main.js --input . --output build/web --template webtemplate && node tools/cachebust.cjs",
+		"check": "node libs/vanilla.js/tools/project.cjs check --input .",
+		"build:desktop": "node tools/build-desktop.cjs",
+		"stage:desktop": "node tools/build-desktop.cjs --stage",
+		"start:desktop": "npm start --prefix platforms/desktop",
+		"build:steam": "node tools/build-steam.cjs"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ddukbaek2/retrogame-template.git"
+	},
+	"keywords": [
+		"game",
+		"retro",
+		"crt",
+		"pixel",
+		"vanilla.js",
+		"template"
+	],
+	"author": "ddukbaek2",
+	"license": "ISC",
+	"type": "commonjs",
+	"devDependencies": {
+		"esbuild": "^0.24.0"
+	}
+}

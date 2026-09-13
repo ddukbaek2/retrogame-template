@@ -1,0 +1,41 @@
+{
+	"name": "nographicgame-desktop",
+	"version": "0.1.0",
+	"description": "No Graphic Games 데스크탑 판",
+	"main": "main.cjs",
+	"scripts": {
+		"start": "electron .",
+		"build:win": "electron-builder --win --x64 --publish never"
+	},
+	"author": "ddukbaek2",
+	"license": "ISC",
+	"devDependencies": {
+		"electron": "^43.4.1",
+		"electron-builder": "^26.15.3"
+	},
+	"build": {
+		"appId": "com.ddukbaek2.nographicgame",
+		"productName": "No Graphic Games",
+		"copyright": "Copyright (c) 2026 ddukbaek2",
+		"directories": {
+			"output": "../../build/desktop"
+		},
+		"files": [
+			"main.cjs",
+			"web/**/*"
+		],
+		"win": {
+			"target": [
+				{
+					"target": "dir",
+					"arch": [
+						"x64"
+					]
+				}
+			],
+			"icon": "web/favicon.ico"
+		},
+		"asar": true,
+		"compression": "normal"
+	}
+}

@@ -1,0 +1,24 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Debug Local Live Server",
+			"type": "chrome",
+			"request": "launch",
+			"url": "http://127.0.0.1:6001/launcher.html",
+			"webRoot": "${workspaceFolder}"
+		},
+		{
+			"name": "Debug Local AIT Server",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "npm run build && npm run dev:ait"
+		},
+		{
+			"name": "Debug Local BFF Server",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "npm run build && npm run dev:bff"
+		}
+	]
+}

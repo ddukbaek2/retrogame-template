@@ -1,0 +1,28 @@
+// 스팀 빌드 정의. (SteamPipe)
+//
+// 이 파일은 그대로 두고, 아래 두 값만 스팀웍스에서 받은 번호로 바꿉니다. (tools/build-steam.cjs 가 채웁니다)
+//   appid   — 앱 번호
+//   depots  — 디포 번호 (보통 앱 번호 + 1)
+//
+// 올리는 방법.
+//   1) npm run build              웹 산출물
+//   2) npm run build:desktop      실행 파일 (build/desktop/win-unpacked)
+//   3) steamcmd +login <계정> +run_app_build "<이 파일의 절대 경로>" +quit
+//
+// 처음 올릴 때는 setlive 를 비워 둡니다. 스팀웍스에서 눈으로 확인한 뒤
+// 기본 브랜치에 올리는 편이 안전합니다.
+"appbuild"
+{
+	"appid"		"0"
+	"desc"		"No Graphics"
+	"buildoutput"	"..\\..\\build\\steam\\output"
+	"contentroot"	"..\\..\\build\\desktop\\win-unpacked"
+	"setlive"	""
+	"preview"	"0"
+	"local"		""
+
+	"depots"
+	{
+		"0"	"depot_build.vdf"
+	}
+}

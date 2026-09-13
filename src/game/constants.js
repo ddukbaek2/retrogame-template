@@ -1,0 +1,211 @@
+//==============================================================================
+// 포함 모듈 목록.
+//==============================================================================
+const System = globalThis;
+
+
+//==============================================================================
+// 게임 제목.
+//==============================================================================
+export const GAME_TITLE = "No Graphic Game";
+
+
+//==============================================================================
+// 기준 해상도. (게임이 그리는 논리 영역, 브라운관 모니터의 화면 구멍)
+//
+// 창은 스팀덱 1280 × 800 이고, 그 안에 옛 브라운관 모니터 그림(assets/monitor/bezel.png)이 꽉 차며
+// 화면 구멍이 960 × 720(VGA 640 × 480 의 1.5 배, 베젤 양옆 160, 위아래 40)입니다. 게임은 이 크기의 백버퍼에 1 : 1 로 그리고, src/game/crt.js 가 볼록하게 휘어 보여 줍니다.
+// (사용자 결정, 2026-09-08, "1280 × 800 안에 브라운관 모니터 이미지가 있고 그 가운데 화면 영역에 게임을 뿌려라")
+//==============================================================================
+export const REFERENCE_RESOLUTION_WIDTH = 960;
+export const REFERENCE_RESOLUTION_HEIGHT = 720;
+// 창(스팀덱) 크기와 베젤.
+export const WINDOW_REFERENCE_WIDTH = 1280;
+export const WINDOW_REFERENCE_HEIGHT = 800;
+export const MONITOR_BEZEL_X = 160;
+export const MONITOR_BEZEL_Y = 40;
+
+
+//==============================================================================
+// 색상 값.
+//
+// 화면에는 글자와 바탕뿐입니다. 상태는 색과 움직임으로만 말합니다.
+//
+// ⚠️ 뜻이 다른 색은 값도 달라야 합니다. (열쇠가 값이라 겹치면 가를 수 없습니다)
+//==============================================================================
+export const Colors = System.Object.freeze({
+	// 게임 화면 밖과 바탕. (바탕은 종이입니다, 화면에서 유일하게 글자가 아닌 것)
+	outside: "#000000",
+	background: "#0e0e12",
+
+	// 글자.
+	textPrimary: "#f2f0e6",
+	textDim: "#5e5e6c",
+	textFaint: "#2f2f3a",
+
+	// 강조. (커서, 고른 것, 날개)
+	accent: "#ffd23f",
+	// 목표, 정보.
+	cyan: "#4fe0ff",
+	// 완료, 맞음.
+	green: "#7cff5c",
+	// 막힘, 오류.
+	red: "#ff4d5a",
+	// 조각 색. (끼우기, 조각마다 다른 색)
+	magenta: "#ff5ad6",
+	orange: "#ff9a3c",
+	lime: "#c8ff5a",
+	white: "#ffffff",
+});
+
+// 조각, 층에 차례로 주는 색. (끼우기)
+export const PIECE_COLOR_KEYS = System.Object.freeze([Colors.cyan, Colors.magenta, Colors.orange, Colors.lime, Colors.green]);
+
+
+//==============================================================================
+// 글꼴. (갈무리, SIL OFL)
+//
+// 도트 글꼴은 설계 크기의 정수 배로만 씁니다. 갈무리11 은 11px, 갈무리14 는 14px, 갈무리9 는 9px 이 설계 크기입니다.
+// 배율이 정수가 아니면 도트가 고르지 않게 깨집니다.
+//==============================================================================
+export const FontFamily = System.Object.freeze({
+	galmuri11: "Galmuri11",
+	galmuri14: "Galmuri14",
+	galmuri9: "Galmuri9",
+	// 한자와 가나까지 담은 도트 글꼴. 한글 자형은 갈무리에서 가져온 것이라 결이 그대로 이어집니다.
+	// (다른 말로 볼 때만 씁니다)
+	fusion12: "FusionPixel12",
+	fusion8: "FusionPixel8",
+});
+
+export const FontPaths = System.Object.freeze([
+	{ family: FontFamily.galmuri11, path: "./assets/fonts/Galmuri11.woff2", weight: "400" },
+	{ family: FontFamily.galmuri11, path: "./assets/fonts/Galmuri11-Bold.woff2", weight: "700" },
+	{ family: FontFamily.galmuri14, path: "./assets/fonts/Galmuri14.woff2", weight: "400" },
+	{ family: FontFamily.galmuri9, path: "./assets/fonts/Galmuri9.woff2", weight: "400" },
+	{ family: FontFamily.fusion12, path: "./assets/fonts/FusionPixel12-ko.woff2", weight: "400" },
+	{ family: FontFamily.fusion8, path: "./assets/fonts/FusionPixel8-ko.woff2", weight: "400" },
+]);
+
+// 글자 크기 티어. (화면 코드에 크기 리터럴을 쓰지 않습니다, 이 티어만 씁니다)
+export const UiFontSize = System.Object.freeze({
+	// 안내, 각주. (갈무리9 × 2)
+	tiny: { family: FontFamily.galmuri9, size: 18, weight: "400" },
+	// 목록, 이름표. (갈무리11 × 2)
+	small: { family: FontFamily.galmuri11, size: 22, weight: "400" },
+	// 판의 글자, 본문. (갈무리11 × 3)
+	medium: { family: FontFamily.galmuri11, size: 33, weight: "400" },
+	// 큰 판의 글자, 표제. (갈무리11 × 4)
+	large: { family: FontFamily.galmuri11, size: 44, weight: "400" },
+	// 완료 표시. (갈무리14 × 4)
+	huge: { family: FontFamily.galmuri14, size: 56, weight: "400" },
+	// 타이틀 제목. (갈무리14 × 6)
+	title: { family: FontFamily.galmuri14, size: 84, weight: "400" },
+});
+
+
+//==============================================================================
+// 모니터 색 모드. (브라운관 필터의 색 줄이기, 설정에서 고릅니다)
+//==============================================================================
+// 볼록 효과의 세기. (기준 휘어짐에 곱합니다)
+export const CurveLevelOptions = System.Object.freeze([
+	{ id: "off", name: "꺼짐", scale: 0 },
+	{ id: "low", name: "약하게", scale: 0.34 },
+	{ id: "medium", name: "보통", scale: 0.67 },
+	{ id: "high", name: "강하게", scale: 1 },
+]);
+
+export const MonitorColorOptions = System.Object.freeze([
+	{ id: "green", name: "1 비트, 녹색" },
+	{ id: "white", name: "1 비트, 흰색" },
+	{ id: "red", name: "1 비트, 적색" },
+	{ id: "blue", name: "1 비트, 청색" },
+	{ id: "green2", name: "2 비트, 녹색" },
+	{ id: "white2", name: "2 비트, 흰색" },
+	{ id: "16", name: "4 비트, 16 색" },
+	{ id: "256", name: "8 비트, 256 색" },
+]);
+
+
+//==============================================================================
+// 화면 식별자.
+//==============================================================================
+export const Screen = System.Object.freeze({
+	title: "title",
+	hub: "hub",
+	settings: "settings",
+});
+
+
+//==============================================================================
+// 판(격자) 배치.
+//
+// 판의 글자는 정사각형 칸에 하나씩 놓입니다. 칸 크기는 글자 크기 티어와 짝입니다.
+//==============================================================================
+export const CELL_SIZE_MEDIUM = 48;
+export const CELL_SIZE_LARGE = 64;
+// 판이 이 칸 수를 넘으면 한 단계 작은 글자를 씁니다.
+export const LARGE_CELL_MAXIMUM_COLUMNS = 7;
+export const LARGE_CELL_MAXIMUM_ROWS = 5;
+// 빈칸에 찍는 글자.
+export const BLANK_GLYPH = "·";
+
+
+//==============================================================================
+// 자료 경로. (런타임은 읽기만 합니다. 만드는 것은 tools/ 의 도구가 맡습니다)
+//==============================================================================
+export const LEVEL_TABLE_PATH = "./assets/data/puzzle/levels.json";
+
+
+//==============================================================================
+// 화면 공통 자리. (머리글, 아래 안내 줄)
+//==============================================================================
+// 볼록 효과가 가장자리 한가운데를 이만큼 가립니다. 글자는 이 안쪽에 둡니다.
+// (오버스캔으로 화면 구멍을 꽉 채우는 대가입니다. src/game/crt.js)
+export const SAFE_MARGIN = 40;
+export const HEADER_CENTER_Y = SAFE_MARGIN + 18;
+export const HEADER_SIDE_MARGIN = SAFE_MARGIN + 12;
+export const HINT_CENTER_Y = REFERENCE_RESOLUTION_HEIGHT - SAFE_MARGIN - 18;
+
+
+//==============================================================================
+// 움직임. (초, 따라가는 빠르기)
+//==============================================================================
+// 글자가 제자리를 따라가는 빠르기. (클수록 빨리 붙습니다)
+export const LETTER_FOLLOW_RATE = 18;
+// 커서, 목록 항목이 따라가는 빠르기.
+export const CURSOR_FOLLOW_RATE = 22;
+// 막혔을 때 흔들리는 시간과 거리.
+export const SHAKE_SECONDS = 0.28;
+export const SHAKE_DISTANCE = 6;
+// 완료 연출 시간.
+export const CLEAR_BOUNCE_SECONDS = 0.9;
+export const CLEAR_BOUNCE_HEIGHT = 14;
+// 커서가 숨쉬는 주기. (초)
+export const CURSOR_BLINK_PERIOD = 0.9;
+// 목록에서 고른 항목이 오른쪽으로 밀리는 거리.
+export const LIST_SELECT_SHIFT = 16;
+// 화면이 들어올 때 글자가 오는 거리와 시간.
+export const ENTER_SHIFT = 40;
+export const ENTER_SECONDS = 0.35;
+
+
+//==============================================================================
+// 입력. (방향키 자동 반복)
+//==============================================================================
+export const REPEAT_DELAY_SECONDS = 0.26;
+export const REPEAT_INTERVAL_SECONDS = 0.085;
+export const STICK_THRESHOLD = 0.55;
+
+
+//==============================================================================
+// 저장. (브라우저 localStorage, 게임마다 제 이름으로)
+//==============================================================================
+export const GAME_STORAGE_PREFIX = "nographic:game:";
+export const SETTINGS_STORAGE_KEY = "nographic:settings";
+
+// 화면 모드 선택지.
+export const DisplayModeOptions = System.Object.freeze([
+	{ id: "fit", name: "창 맞춤" },
+	{ id: "integer", name: "정수 배율" },
+]);

@@ -1,0 +1,21 @@
+// 디포 정의. (SteamPipe)
+//
+// contentroot 안의 모든 파일을 그대로 올립니다. 실행 파일과 그 옆의 자원 폴더가
+// 전부 필요하므로 걸러 내지 않습니다.
+"DepotBuildConfig"
+{
+	"DepotID"	"0"
+	"contentroot"	"..\\..\\build\\desktop\\win-unpacked"
+
+	"FileMapping"
+	{
+		"LocalPath"	"*"
+		"DepotPath"	"."
+		"recursive"	"1"
+	}
+
+	// 디버그 심볼과 잡파일은 올리지 않습니다.
+	"FileExclusion"	"*.pdb"
+	"FileExclusion"	"*.log"
+	"FileExclusion"	"LICENSES.chromium.html"
+}
