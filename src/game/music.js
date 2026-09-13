@@ -35,7 +35,26 @@ const MUSIC_VOLUME = 0.5;
 // 켜고 끌 때 이만큼 걸쳐 오갑니다. (초)
 const FADE_SECONDS = 0.9;
 // 한 마디는 네 박입니다.
+// 한 마디의 박 수. 곡이 제 값을 가지면 그것을 씁니다.
+// 셋이면 왈츠, 다섯이면 발이 안 맞아 불안합니다. 박자가 다르면 곡이 근본부터 달라집니다.
 const BEATS_PER_BAR = 4;
+
+//==============================================================================
+// 음계. (가락이 고르는 음)
+//
+// 가락을 화음 구성음에서만 뽑으면 어떤 곡이든 같은 세 음만 울려 다 비슷하게 들립니다.
+// 곡마다 음계를 달리 주어야 색이 갈립니다. 값은 뿌리음에서 센 반음 수입니다.
+//==============================================================================
+const Scales = System.Object.freeze({
+	// 도리안. 단조인데 여섯째 음이 밝습니다. 애잔하지만 숨은 쉬어집니다.
+	dorian: [0, 2, 3, 5, 7, 9, 10],
+	// 자연 단조. 흔하고 사람 냄새가 납니다.
+	minor: [0, 2, 3, 5, 7, 8, 10],
+	// 로크리안. 다섯째 음이 반음 낮아 어디에도 기댈 데가 없습니다.
+	locrian: [0, 1, 3, 5, 6, 8, 10],
+	// 프리지안. 둘째 음이 반음이라 바짝 조입니다.
+	phrygian: [0, 1, 3, 5, 7, 8, 10],
+});
 // 드론의 뿌리 음. (D1 언저리)
 const DRONE_NOTE = 26;
 // 베이스가 서는 자리. (D2)
@@ -44,14 +63,8 @@ const BASS_NOTE = 38;
 const CHORD_NOTE = 50;
 // 가락이 서는 자리. (D4)
 const LEAD_NOTE = 62;
-
-// 자리 넷. (화음, 베이스) 내려가는 걸음입니다.
-const LAMENT = System.Object.freeze([
-	{ chord: [0, 3, 7], bass: 0 },
-	{ chord: [1, 4, 9], bass: -11 },
-	{ chord: [0, 3, 7], bass: -2 },
-	{ chord: [-4, 0, 3], bass: -4 },
-]);
+// 아르페지오 반주가 서는 자리. 선율보다 한 옥타브 아래입니다.
+const ARP_NOTE = 50;
 
 // 곳마다의 배경음.
 //
@@ -68,99 +81,179 @@ const LAMENT = System.Object.freeze([
 //   던전  드론과 오르간 화음이 주인공입니다. 가락은 성글고 종과 바람이 옵니다.
 //   전투  북(잡음)과 톱니 저음 리프, 반음으로 떠는 줄. 화음은 거의 없습니다.
 const TRACKS = System.Object.freeze({
+	// 마을. 3 박 왈츠입니다.
+	//
+	// 네 곳 가운데 여기만 박이 셋이라 걸음이 돌아가듯 얹힙니다. 도리안이라 단조인데도
+	// 여섯째 음이 밝아 애잔한 쪽입니다. 선율이 네 마디에 걸쳐 오르내리며 노래합니다.
+	// 아르페지오가 박마다 화음을 쪼개 깔고, 베이스는 첫 박만 짚습니다.
 	town: {
-		// 같은 고딕 분위기 안에서 숨을 돌리는 자리입니다. 드론을 얇게 깔고 가락을 또렷하게 세웁니다.
-		// 던전과 확실히 갈리도록 걸음을 빠르게 하고 낮은 소리를 걷어 냅니다.
-		// (사용자 지적, 2026-09-13, "던전에 들어왔는데 왜 마을 bgm 이 계속 이어지냐")
-		beatSeconds: 0.52,
+		beatsPerBar: 3,
+		beatSeconds: 0.46,
+		scale: Scales.dorian,
+		leadRoot: 0,
 		bars: [
-			{ chord: [-4, 0, 3], bass: -16 },
-			{ chord: [-5, -1, 2], bass: -17 },
-			{ chord: [-2, 2, 5], bass: -14 },
-			{ chord: [-4, 0, 3], bass: -16 },
+			{ chord: [0, 3, 7], bass: -12, lead: 0 },
+			{ chord: [-2, 2, 5], bass: -14, lead: 0 },
+			{ chord: [3, 7, 10], bass: -9, lead: 0 },
+			{ chord: [-2, 2, 7], bass: -14, lead: 0 },
 		],
-		padVolume: 0.07,
+		padVolume: 0.025,
 		bassVolume: 0.11,
 		leadVolume: 0.1,
-		droneVolume: 0.03,
+		droneVolume: 0.015,
 		leadWave: "triangle",
-		leadFilter: 2400,
+		leadFilter: 2800,
+		leadVibrato: 14,
 		bassWave: "triangle",
 		leadStep: 2,
-		leadPattern: [0, 2, 1, 2],
-		bassBeats: [0, 2],
+		leadHold: 1.5,
+		// 네 마디 스물넷 자리를 한 선율로 씁니다. (3 박 × 2 쪼갬 × 4 마디)
+		leadPattern: [
+			4, null, 5, null, 4, 2,
+			3, null, 2, null, 0, null,
+			4, null, 5, 6, 5, 4,
+			2, null, 3, 2, 0, null,
+		],
+		bassBeats: [0],
+		arpVolume: 0.045,
+		arpStep: 6,
+		arpWave: "square",
+		arpFilter: 1700,
+		arpRoot: 0,
 		bellEveryBars: 0,
 		windEveryBars: 0,
 		stingCount: 0,
 		drumPattern: [],
 	},
+	// 상점. 4 박에 걷는 베이스입니다.
+	//
+	// 사람을 마주하는 자리라 넷 가운데 가장 움직임이 많습니다. 베이스가 박마다 걸어 다니고
+	// 아르페지오가 열여섯으로 잘게 구릅니다. 선율은 짧은 모티프를 부르고 받습니다.
 	shop: {
-		// 네 곳이 다 같은 고딕의 진중한 결입니다. 상점은 그 안에서 한 단만 열려 있습니다.
-		// 드론과 오르간은 그대로 깔리고, 걸음이 조금 빠르며 화음이 어둡지만은 않습니다.
-		// (사용자 지적, 2026-09-13, "무슨 빠찡꼬 bgm 이냐", "고딕의 진중한 호러 느낌 안에서")
-		beatSeconds: 0.54,
+		beatsPerBar: 4,
+		beatSeconds: 0.4,
+		scale: Scales.minor,
+		leadRoot: 0,
 		bars: [
-			{ chord: [-4, 0, 3], bass: -16 },
-			{ chord: [-2, 2, 5], bass: -14 },
-			{ chord: [-5, -1, 3], bass: -17 },
-			{ chord: [-4, 0, 3], bass: -16 },
+			{ chord: [0, 3, 7], bass: -12, lead: 0 },
+			{ chord: [-4, 0, 5], bass: -16, lead: 0 },
+			{ chord: [-5, -1, 3], bass: -17, lead: -2 },
+			{ chord: [-2, 2, 7], bass: -14, lead: 0 },
 		],
-		padVolume: 0.13,
-		bassVolume: 0.11,
-		leadVolume: 0.07,
-		droneVolume: 0.07,
-		leadWave: "sine",
-		leadFilter: 2100,
+		padVolume: 0.02,
+		bassVolume: 0.12,
+		leadVolume: 0.085,
+		droneVolume: 0,
+		leadWave: "square",
+		leadFilter: 2500,
+		leadVibrato: 10,
 		bassWave: "triangle",
 		leadStep: 2,
-		leadPattern: [0, 2, 1, 2, 2, 0, 1, 2],
-		bassBeats: [0, 2],
-		bellEveryBars: 12,
+		leadHold: 0.85,
+		// 서른두 자리. 앞 여덟을 부르고 다음 여덟이 받습니다.
+		leadPattern: [
+			2, 4, 2, null, 4, 2, 0, null,
+			0, 2, 4, null, 2, 0, null, null,
+			4, 5, 4, 2, 4, null, 2, null,
+			2, 1, 0, null, 2, null, null, null,
+		],
+		bassBeats: [0, 1, 2, 3],
+		arpVolume: 0.04,
+		arpStep: 16,
+		arpWave: "square",
+		arpFilter: 2000,
+		arpRoot: 0,
+		bellEveryBars: 0,
 		windEveryBars: 0,
 		stingCount: 0,
 		drumPattern: [],
 	},
+	// 던전. 5 박입니다.
+	//
+	// 홀수 박이라 걸음과 박자가 맞지 않습니다. 발이 어긋나는 것이 그대로 불안이 됩니다.
+	// 로크리안이라 다섯째 음이 반음 낮아 기댈 데가 없습니다.
+	// 아르페지오도 아주 성글게 굴러 빈자리를 그대로 둡니다. 종과 바람이 그 자리를 지납니다.
 	dungeon: {
-		// 마을과 한눈에, 한 귀에 갈려야 합니다. 걸음을 늦추고 바닥을 깔고 가락을 성글게 둡니다.
-		// 낮은 종과 바람이 자주 지나가며 소리가 비는 자리를 메웁니다.
-		beatSeconds: 0.88,
-		bars: LAMENT,
-		padVolume: 0.13,
-		bassVolume: 0.13,
-		leadVolume: 0.045,
+		beatsPerBar: 5,
+		beatSeconds: 0.8,
+		scale: Scales.locrian,
+		leadRoot: -12,
+		bars: [
+			{ chord: [0, 3, 6], bass: -12, lead: 0 },
+			{ chord: [0, 3, 6], bass: -12, lead: 0 },
+			{ chord: [-1, 3, 6], bass: -13, lead: -1 },
+			{ chord: [-3, 1, 6], bass: -15, lead: -3 },
+		],
+		padVolume: 0.1,
+		bassVolume: 0.11,
+		leadVolume: 0.055,
 		droneVolume: 0.13,
 		leadWave: "sine",
-		leadFilter: 1100,
+		leadFilter: 1000,
+		leadVibrato: 22,
 		bassWave: "sawtooth",
 		leadStep: 1,
-		leadPattern: [0, 0, 2, 0],
+		leadHold: 2.4,
+		// 스무 자리에 여섯 음뿐입니다. 나머지는 정적입니다.
+		leadPattern: [
+			0, null, null, 4, null,
+			null, null, 2, null, null,
+			1, null, null, null, 4,
+			null, 0, null, null, null,
+		],
 		bassBeats: [0],
+		arpVolume: 0.022,
+		arpStep: 5,
+		arpWave: "triangle",
+		arpFilter: 900,
+		arpRoot: -12,
 		bellEveryBars: 3,
 		windEveryBars: 4,
 		stingCount: 0,
 		drumPattern: [],
 	},
+	// 전투. 4 박을 빠르게 몰아칩니다.
+	//
+	// 프리지안이라 둘째 음이 반음입니다. 그 반음이 계속 스쳐 바짝 조입니다.
+	// 화음이 반음씩 기어 내려가고 베이스가 박마다 내려찍습니다.
+	// 아르페지오가 열여섯으로 구르고 북이 뒤를 받칩니다.
 	battle: {
-		beatSeconds: 0.3,
+		beatsPerBar: 4,
+		beatSeconds: 0.27,
+		scale: Scales.phrygian,
+		leadRoot: 0,
 		bars: [
-			{ chord: [0, 3, 6], bass: 0 },
-			{ chord: [-1, 2, 5], bass: -1 },
-			{ chord: [1, 4, 7], bass: 1 },
-			{ chord: [0, 3, 6], bass: -2 },
+			{ chord: [0, 3, 7], bass: -12, lead: 0 },
+			{ chord: [-1, 3, 6], bass: -13, lead: -1 },
+			{ chord: [-2, 1, 5], bass: -14, lead: -2 },
+			{ chord: [-3, 1, 4], bass: -15, lead: -3 },
 		],
-		padVolume: 0.02,
-		bassVolume: 0.3,
-		leadVolume: 0.05,
-		droneVolume: 0.1,
-		leadWave: "sawtooth",
-		leadFilter: 1800,
+		padVolume: 0.015,
+		bassVolume: 0.26,
+		leadVolume: 0.075,
+		droneVolume: 0.07,
+		leadWave: "square",
+		leadFilter: 2400,
+		leadVibrato: 8,
 		bassWave: "sawtooth",
 		leadStep: 2,
-		leadPattern: [0, 0, 1, 0, 2, 0, 1, 0],
+		leadHold: 0.8,
+		// 서른두 자리. 치받았다 내려꽂습니다.
+		leadPattern: [
+			0, 1, 0, 1, 4, null, 3, null,
+			2, 1, 0, null, 1, null, 0, null,
+			0, 1, 2, 3, 4, null, 5, null,
+			4, 3, 2, 1, 0, null, null, null,
+		],
 		bassBeats: [0, 1, 2, 3],
+		arpVolume: 0.035,
+		arpStep: 16,
+		arpWave: "square",
+		arpFilter: 2200,
+		arpRoot: 0,
 		bellEveryBars: 0,
 		windEveryBars: 0,
-		stingCount: 16,
+		stingCount: 0,
 		// 북. 한 마디를 여덟로 쪼갠 자리에 (세기) 를 둡니다. 0 이면 치지 않습니다.
 		drumPattern: [1, 0, 0.5, 0, 1, 0, 0.5, 0.7],
 	},
@@ -317,7 +410,7 @@ function stopDrone() {
  * @param { string } waveType
  * @param { number } filterHertz
  */
-function schedulePluck(noteNumber, startTime, seconds, volume, waveType, filterHertz) {
+function schedulePluck(noteNumber, startTime, seconds, volume, waveType, filterHertz, vibratoCents) {
 	const audioContext = readAudioContext();
 	const destination = readMusicGain();
 	if (audioContext === null || destination === null) {
@@ -337,6 +430,20 @@ function schedulePluck(noteNumber, startTime, seconds, volume, waveType, filterH
 	oscillator.type = waveType;
 	oscillator.frequency.value = readFrequency(noteNumber);
 	oscillator.connect(filter);
+	// 비브라토. 음을 조금 떨어 줍니다. 옛 8 비트 음원이 선율을 살리던 방법입니다.
+	// 길게 끄는 음에만 걸고, 짧게 스치는 음에는 걸지 않습니다.
+	if (vibratoCents > 0 && seconds > 0.2) {
+		const vibrato = audioContext.createOscillator();
+		vibrato.type = "sine";
+		vibrato.frequency.value = 5.5;
+		const vibratoGain = audioContext.createGain();
+		// 센트를 주파수 폭으로 바꿉니다. (한 반음이 100 센트)
+		vibratoGain.gain.value = readFrequency(noteNumber) * (System.Math.pow(2, vibratoCents / 1200) - 1);
+		vibrato.connect(vibratoGain);
+		vibratoGain.connect(oscillator.frequency);
+		vibrato.start(startTime + 0.08);
+		vibrato.stop(startTime + seconds);
+	}
 	oscillator.start(startTime);
 	oscillator.stop(startTime + seconds + 0.02);
 }
@@ -530,6 +637,39 @@ function scheduleWind(startTime) {
 
 
 //==============================================================================
+// 아르페지오 반주. (화음을 빠르게 쪼개 올렸다 내립니다)
+//
+// 옛 8 비트 음원은 채널이 넷뿐이라 화음을 한꺼번에 누르지 못했습니다. 그래서 화음의 음을
+// 아주 빠르게 번갈아 쳐서 화음처럼 들리게 했습니다. 이 결이 곧 그 시절 소리입니다.
+// 긴 패드를 까는 것과는 전혀 다르게 들립니다.
+//==============================================================================
+/**
+ * @param { object } track
+ * @param { Array } chord
+ * @param { number } startTime
+ * @param { number } barSeconds
+ */
+function scheduleArpeggio(track, chord, startTime, barSeconds) {
+	if (track.arpVolume <= 0 || track.arpStep <= 0) {
+		return;
+	}
+	const stepCount = track.arpStep;
+	const stepSeconds = barSeconds / stepCount;
+	for (let index = 0; index < stepCount; ++index) {
+		// 올라갔다 내려오는 차례입니다. 한 방향으로만 돌면 기계처럼 들립니다.
+		const span = chord.length * 2 - 2;
+		let chordIndex = span <= 0 ? 0 : index % span;
+		if (chordIndex >= chord.length) {
+			chordIndex = span - chordIndex;
+		}
+		const noteNumber = ARP_NOTE + track.arpRoot + chord[chordIndex];
+		schedulePluck(noteNumber, startTime + stepSeconds * index, stepSeconds * 0.92,
+			track.arpVolume, track.arpWave, track.arpFilter, 0);
+	}
+}
+
+
+//==============================================================================
 // 한 마디 짜기. (베이스, 가락, 화음, 덧소리)
 //==============================================================================
 /**
@@ -539,10 +679,12 @@ function scheduleWind(startTime) {
 function scheduleBar(track, startTime) {
 	const bar = track.bars[barIndex % track.bars.length];
 	const beatSeconds = track.beatSeconds;
-	const barSeconds = beatSeconds * BEATS_PER_BAR;
+	const beatsPerBar = track.beatsPerBar === undefined ? BEATS_PER_BAR : track.beatsPerBar;
+	const barSeconds = beatSeconds * beatsPerBar;
 
-	// 화음.
+	// 화음. 길게 까는 패드는 얇게 두고, 아르페지오가 반주를 맡습니다.
 	scheduleChord(track, startTime, bar.chord, barSeconds);
+	scheduleArpeggio(track, bar.chord, startTime, barSeconds);
 
 	// 베이스. 짚는 박마다 뿌리 음을 뜯습니다.
 	for (const beat of track.bassBeats) {
@@ -561,15 +703,36 @@ function scheduleBar(track, startTime) {
 		scheduleDrum(startTime + barSeconds * index / track.drumPattern.length, 0.3 * strength);
 	}
 
-	// 가락. 화음의 음을 타고 오르내립니다.
+	// 가락. 곡의 음계에서 음을 골라 오르내립니다.
+	//
+	// 가락 패턴의 값은 **음계의 자리**입니다. 마이너스면 아래 옥타브로 내려갑니다.
+	// `null` 이면 그 자리는 쉽니다. 쉬는 자리가 있어야 곡이 늘어지지 않습니다.
 	const stepSeconds = beatSeconds / track.leadStep;
-	const stepCount = BEATS_PER_BAR * track.leadStep;
+	const stepCount = beatsPerBar * track.leadStep;
+	const scale = track.scale === undefined ? Scales.minor : track.scale;
+	const leadRoot = track.leadRoot === undefined ? 0 : track.leadRoot;
 	for (let step = 0; step < stepCount; ++step) {
-		const patternIndex = track.leadPattern[step % track.leadPattern.length];
-		const offset = bar.chord[patternIndex % bar.chord.length];
-		const octave = step % (stepCount / 2) === 0 ? 12 : 0;
-		schedulePluck(LEAD_NOTE + offset + octave, startTime + stepSeconds * step,
-			stepSeconds * 1.6, track.leadVolume, track.leadWave, track.leadFilter);
+		// 선율은 곡 전체로 이어집니다. 마디를 세지 않으면 패턴 앞부분만 되풀이됩니다.
+		const melodyIndex = (barIndex * stepCount + step) % track.leadPattern.length;
+		const patternValue = track.leadPattern[melodyIndex];
+		if (patternValue === null) {
+			continue;
+		}
+		// 음계 자리를 반음 수로 풉니다. 자리가 음계 길이를 넘으면 위 옥타브입니다.
+		const scaleLength = scale.length;
+		let scaleIndex = patternValue;
+		let octaveShift = 0;
+		while (scaleIndex < 0) {
+			scaleIndex += scaleLength;
+			octaveShift -= 12;
+		}
+		while (scaleIndex >= scaleLength) {
+			scaleIndex -= scaleLength;
+			octaveShift += 12;
+		}
+		const offset = scale[scaleIndex] + octaveShift + bar.lead;
+		schedulePluck(LEAD_NOTE + leadRoot + offset, startTime + stepSeconds * step,
+			stepSeconds * track.leadHold, track.leadVolume, track.leadWave, track.leadFilter, track.leadVibrato);
 	}
 
 	// 긁는 줄. 반음을 오가며 빠르게 떱니다.
@@ -624,7 +787,8 @@ function tick() {
 	if (nextBarTime <= 0) {
 		nextBarTime = audioContext.currentTime + 0.12;
 	}
-	const barSeconds = track.beatSeconds * BEATS_PER_BAR;
+	const beatsPerBar = track.beatsPerBar === undefined ? BEATS_PER_BAR : track.beatsPerBar;
+	const barSeconds = track.beatSeconds * beatsPerBar;
 	while (nextBarTime < audioContext.currentTime + SCHEDULE_AHEAD) {
 		scheduleBar(track, nextBarTime);
 		nextBarTime += barSeconds;
