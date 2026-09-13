@@ -57,7 +57,9 @@ export function composeFontString(tier) {
 	if (fontOverrides !== null) {
 		const replaced = fontOverrides.get(tier);
 		if (replaced !== undefined) {
-			return tier.weight + " " + replaced.size + "px \"" + replaced.family + "\"";
+			// 갈아 끼운 글꼴 뒤에 본디 글꼴을 붙입니다. 그 글꼴에 없는 글자(다른 말로 보는 중에 나오는 한글)를
+			// 두부로 찍지 않고 갈무리로 찍기 위해서입니다.
+			return tier.weight + " " + replaced.size + "px \"" + replaced.family + "\", \"" + tier.family + "\"";
 		}
 	}
 	return tier.weight + " " + tier.size + "px \"" + tier.family + "\"";

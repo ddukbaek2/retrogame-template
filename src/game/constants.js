@@ -72,10 +72,6 @@ export const FontFamily = System.Object.freeze({
 	galmuri11: "Galmuri11",
 	galmuri14: "Galmuri14",
 	galmuri9: "Galmuri9",
-	// 한자와 가나까지 담은 도트 글꼴. 한글 자형은 갈무리에서 가져온 것이라 결이 그대로 이어집니다.
-	// (다른 말로 볼 때만 씁니다)
-	fusion12: "FusionPixel12",
-	fusion8: "FusionPixel8",
 });
 
 export const FontPaths = System.Object.freeze([
@@ -83,8 +79,6 @@ export const FontPaths = System.Object.freeze([
 	{ family: FontFamily.galmuri11, path: "./assets/fonts/Galmuri11-Bold.woff2", weight: "700" },
 	{ family: FontFamily.galmuri14, path: "./assets/fonts/Galmuri14.woff2", weight: "400" },
 	{ family: FontFamily.galmuri9, path: "./assets/fonts/Galmuri9.woff2", weight: "400" },
-	{ family: FontFamily.fusion12, path: "./assets/fonts/FusionPixel12-ko.woff2", weight: "400" },
-	{ family: FontFamily.fusion8, path: "./assets/fonts/FusionPixel8-ko.woff2", weight: "400" },
 ]);
 
 // 글자 크기 티어. (화면 코드에 크기 리터럴을 쓰지 않습니다, 이 티어만 씁니다)
