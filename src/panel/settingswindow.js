@@ -40,6 +40,17 @@ const HINT_TEXT = "방향키 고르기, 좌우 바꾸기, 취소 돌아가기";
  * @param { object } settings
  * @returns { string }
  */
+function readCurveKey(settings) {
+	if (settings.isMonitorFrameEnabled === false) {
+		return "unavailable";
+	}
+	return settings.curveLevel;
+}
+
+/**
+ * @param { object } settings
+ * @returns { string }
+ */
 function readCurveText(settings) {
 	if (settings.isMonitorFrameEnabled === false) {
 		return "쓸 수 없음";
@@ -119,20 +130,23 @@ export class SettingsWindow extends ScreenNode {
 		const gameModule = this.getScene().getGameModule();
 		const gameItems = gameModule === null ? [] : gameModule.createSettingItems();
 		const frameItems = [
-			{ id: "sound", label: "소리", valueText: settings.isSoundEnabled ? "켬" : "끔" },
-			{ id: "display", label: "화면", valueText: displayModeName },
-			{ id: "frame", label: "모니터 프레임", valueText: settings.isMonitorFrameEnabled === false ? "끔" : "켬" },
-			{ id: "curve", label: "볼록 효과", valueText: readCurveText(settings) },
-			{ id: "colors", label: "모니터 색", valueText: monitorColorName },
+			{ id: "sound", valueKey: settings.isSoundEnabled ? "on" : "off", label: "소리", valueText: settings.isSoundEnabled ? "켬" : "끔" },
+			{ id: "display", valueKey: settings.displayMode, label: "화면", valueText: displayModeName },
+			{ id: "frame", valueKey: settings.isMonitorFrameEnabled === false ? "off" : "on", label: "모니터 프레임", valueText: settings.isMonitorFrameEnabled === false ? "끔" : "켬" },
+			{ id: "curve", valueKey: readCurveKey(settings), label: "볼록 효과", valueText: readCurveText(settings) },
+			{ id: "colors", valueKey: settings.monitorColors, label: "모니터 색", valueText: monitorColorName },
 			{ id: "grid", label: "볼록 확인 격자" },
 			{ id: "reset", label: "설정 초기화" },
 			{ id: "erase", label: this.#isEraseArmed ? "정말 초기화" : "데이터 초기화" },
 			{ id: "close", label: "닫기" },
 		];
-		// 여러 말을 지원하는 게임은 틀 항목의 이름도 제 말로 바꿔 답합니다.
+		// 여러 말을 지원하는 게임은 틀 항목의 이름과 값도 제 말로 바꿔 답합니다.
 		if (gameModule !== null) {
 			for (const frameItem of frameItems) {
 				frameItem.label = gameModule.readSettingLabel(frameItem.id, frameItem.label);
+				if (frameItem.valueKey !== undefined) {
+					frameItem.valueText = gameModule.readSettingValue(frameItem.id, frameItem.valueKey, frameItem.valueText);
+				}
 			}
 		}
 		this.#list.setVisibleRowCount(LIST_VISIBLE_ROWS);
@@ -289,9 +303,12 @@ export class SettingsWindow extends ScreenNode {
 			return;
 		}
 		const offset = this.readEnterOffset();
-		drawText(graphic, "설정", REFERENCE_RESOLUTION_WIDTH * 0.5 + offset, TITLE_CENTER_Y, UiFontSize.huge, Colors.textPrimary, "center");
+		const gameModule = this.getScene().getGameModule();
+		const titleText = gameModule === null ? "설정" : gameModule.readSettingText("title", "설정");
+		drawText(graphic, titleText, REFERENCE_RESOLUTION_WIDTH * 0.5 + offset, TITLE_CENTER_Y, UiFontSize.huge, Colors.textPrimary, "center");
 		moveNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5) + offset, LIST_TOP_Y);
-		this.drawHint(graphic, HINT_TEXT);
+		const hintText = gameModule === null ? HINT_TEXT : gameModule.readSettingText("hint", HINT_TEXT);
+		this.drawHint(graphic, hintText);
 		super.draw(graphic);
 	}
 }
