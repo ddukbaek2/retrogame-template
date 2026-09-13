@@ -65,8 +65,11 @@ export const PIECE_COLOR_KEYS = System.Object.freeze([Colors.cyan, Colors.magent
 //==============================================================================
 // 글꼴. (갈무리, SIL OFL)
 //
-// 도트 글꼴은 설계 크기의 정수 배로만 씁니다. 갈무리11 은 11px, 갈무리14 는 14px, 갈무리9 는 9px 이 설계 크기입니다.
-// 배율이 정수가 아니면 도트가 고르지 않게 깨집니다.
+// 도트 글꼴은 **em 격자의 정수 배**로만 씁니다. 글꼴 이름의 숫자(11, 14, 9)는 글자가 실제로 차지하는 칸 수이고,
+// em 은 그보다 한 칸 넓습니다. 갈무리11 은 12 칸, 갈무리14 는 15 칸, 갈무리9 는 10 칸입니다.
+// (em 1200, 1500, 1000 에 좌표 격자가 100 이라 재 보면 그렇습니다)
+// 그래서 갈무리11 을 22px 로 쓰면 한 칸이 1.83px 이 되어 획이 들쭉날쭉해집니다. 24px 여야 한 칸이 2px 로 떨어집니다.
+// 다른 도트 글꼴을 더할 때도 이름이 아니라 em 격자를 재어 맞춥니다.
 //==============================================================================
 export const FontFamily = System.Object.freeze({
 	galmuri11: "Galmuri11",
@@ -83,18 +86,18 @@ export const FontPaths = System.Object.freeze([
 
 // 글자 크기 티어. (화면 코드에 크기 리터럴을 쓰지 않습니다, 이 티어만 씁니다)
 export const UiFontSize = System.Object.freeze({
-	// 안내, 각주. (갈무리9 × 2)
-	tiny: { family: FontFamily.galmuri9, size: 18, weight: "400" },
-	// 목록, 이름표. (갈무리11 × 2)
-	small: { family: FontFamily.galmuri11, size: 22, weight: "400" },
-	// 판의 글자, 본문. (갈무리11 × 3)
-	medium: { family: FontFamily.galmuri11, size: 33, weight: "400" },
-	// 큰 판의 글자, 표제. (갈무리11 × 4)
-	large: { family: FontFamily.galmuri11, size: 44, weight: "400" },
-	// 완료 표시. (갈무리14 × 4)
-	huge: { family: FontFamily.galmuri14, size: 56, weight: "400" },
-	// 타이틀 제목. (갈무리14 × 6)
-	title: { family: FontFamily.galmuri14, size: 84, weight: "400" },
+	// 안내, 각주. (갈무리9, 10 칸 × 2)
+	tiny: { family: FontFamily.galmuri9, size: 20, weight: "400" },
+	// 목록, 이름표. (갈무리11, 12 칸 × 2)
+	small: { family: FontFamily.galmuri11, size: 24, weight: "400" },
+	// 판의 글자, 본문. (갈무리11, 12 칸 × 3)
+	medium: { family: FontFamily.galmuri11, size: 36, weight: "400" },
+	// 큰 판의 글자, 표제. (갈무리11, 12 칸 × 4)
+	large: { family: FontFamily.galmuri11, size: 48, weight: "400" },
+	// 완료 표시. (갈무리14, 15 칸 × 4)
+	huge: { family: FontFamily.galmuri14, size: 60, weight: "400" },
+	// 타이틀 제목. (갈무리14, 15 칸 × 6)
+	title: { family: FontFamily.galmuri14, size: 90, weight: "400" },
 });
 
 
