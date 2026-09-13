@@ -62,7 +62,7 @@ export class PlayScreen extends ScreenNode {
 			return;
 		}
 		if (command === Command.cancel) {
-			// 셈이 남아 있으면 되돌리고, 없으면 게임 목록으로 나갑니다.
+			// 셈이 남아 있으면 되돌리고, 없으면 타이틀로 나갑니다.
 			beepCancel();
 			const count = game.getCount();
 			if (count > 0) {

@@ -54,7 +54,7 @@ export class TitleScreen extends ScreenNode {
 		placeNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5), LIST_TOP_Y, LIST_WIDTH, this.#list.readTotalHeight());
 		this.#list.setSelectHandler((itemId) => {
 			if (itemId === "start") {
-				scene.openHub();
+				scene.enterGame();
 			}
 			else if (itemId === "settings") {
 				scene.openSettings();

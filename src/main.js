@@ -24,9 +24,8 @@ import { openAudio, setSoundEnabled, beepMove } from "./game/beep.js";
 import { stopMusic } from "./game/music.js";
 import { tickUiTime } from "./ui/uitime.js";
 import { readSettings, writeSettings, clearAllGameData, createDefaultSettings } from "./game/savedata.js";
-import { createGameModules } from "./game/games.js";
+import { createGameModule } from "./game/gameentry.js";
 import { TitleScreen } from "./screen/titlescreen.js";
-import { HubScreen } from "./screen/hubscreen.js";
 import { SettingsWindow } from "./panel/settingswindow.js";
 import {
 	GAME_TITLE, Colors, Screen, UiFontSize, FontPaths,
@@ -37,31 +36,28 @@ import {
 //==============================================================================
 // 메인 씬. (게임 모듈 관리 + 화면 라우팅 + 명령 배분)
 //
-// 이 앱은 그래픽 없는 게임 여러 편을 담습니다. 씬은 타이틀, 게임 목록(허브), 설정을 직접 갖고,
-// 게임마다의 화면은 게임 모듈(src/games/<id>/)이 만들어 씬에 맡깁니다. 화면은 루트 아래의
-// 노드이고 한 번에 하나만 켜져 있습니다. 명령(방향, 확인, 취소, 메뉴)은 켜진 화면이 받습니다.
+// **한 프로젝트에 게임 한 편입니다.** 씬은 타이틀과 설정을 직접 갖고, 게임의 화면은 게임
+// 모듈(src/games/<id>/)이 만들어 씬에 맡깁니다. 화면은 루트 아래의 노드이고 한 번에 하나만
+// 켜져 있습니다. 명령(방향, 확인, 취소, 메뉴)은 켜진 화면이 받습니다.
 //
-//   타이틀 ─ 시작 ─→ 게임 목록 ─ 확인 ─→ 게임의 첫 화면 … ─ 게임 목록으로 ─→ 게임 목록
+//   타이틀 ─ 시작 ─→ 게임의 첫 화면 … ─ 타이틀로 ─→ 타이틀
 //   타이틀, 게임 안 ─ 설정 ─→ 설정(소리, 화면, 진행 지우기) ─ 취소 ─→ 돌아감
 //
-// 주소에 ?game=<id> 가 있으면 타이틀, 허브를 건너뛰고 그 게임으로 바로 들어갑니다. (한 편만 따로 묶을 때)
+// 어떤 게임을 만드는지는 src/game/gameentry.js 가 정합니다.
 //==============================================================================
-class NoGraphicScene extends Scene {
+class GameScene extends Scene {
 	//==============================================================================
 	// 멤버 변수 목록.
 	//==============================================================================
 	/** @private @type { object } */ #screens;
 	/** @private @type { string } */ #currentScreenKey;
 	/** @private @type { string } */ #settingsReturnKey;
-	/** @private @type { object[] } */ #gameModules;
-	/** @private @type { object } */ #currentGameModule;
+	/** @private @type { object } */ #gameModule;
 	/** @private @type { object } */ #settings;
 	/** @private @type { CommandReader } */ #commandReader;
 	/** @private @type { TitleScreen } */ #titleScreen;
-	/** @private @type { HubScreen } */ #hubScreen;
 	/** @private @type { SettingsWindow } */ #settingsWindow;
 	/** @private @type { number } */ #loadedRatio;
-	/** @private @type { string } */ #directGameId;
 
 	//==============================================================================
 	// 생성.
@@ -71,15 +67,12 @@ class NoGraphicScene extends Scene {
 		this.#screens = {};
 		this.#currentScreenKey = "";
 		this.#settingsReturnKey = Screen.title;
-		this.#gameModules = [];
-		this.#currentGameModule = null;
+		this.#gameModule = null;
 		this.#settings = readSettings();
 		this.#commandReader = new CommandReader();
 		this.#titleScreen = null;
-		this.#hubScreen = null;
 		this.#settingsWindow = null;
 		this.#loadedRatio = 0;
-		this.#directGameId = readDirectGameId();
 	}
 
 	//==============================================================================
@@ -102,27 +95,19 @@ class NoGraphicScene extends Scene {
 			this.#loadedRatio = 0.3 * loadedFontCount / FontPaths.length;
 		}
 
-		this.#gameModules = createGameModules(this);
-		let loadedModuleCount = 0;
-		for (const gameModule of this.#gameModules) {
-			await gameModule.load();
-			loadedModuleCount += 1;
-			this.#loadedRatio = 0.3 + 0.7 * loadedModuleCount / this.#gameModules.length;
-		}
+		this.#gameModule = createGameModule(this);
+		await this.#gameModule.load();
+		this.#loadedRatio = 1;
 
 		const root = this.getRoot();
 		this.#titleScreen = new TitleScreen(this);
-		this.#hubScreen = new HubScreen(this);
 		this.#settingsWindow = new SettingsWindow(this);
 		this.registerScreen(Screen.title, this.#titleScreen);
-		this.registerScreen(Screen.hub, this.#hubScreen);
 		this.registerScreen(Screen.settings, this.#settingsWindow);
-		for (const gameModule of this.#gameModules) {
-			const gameScreens = gameModule.createScreens();
-			const localKeys = System.Object.keys(gameScreens);
-			for (const localKey of localKeys) {
-				this.registerScreen(gameModule.getId() + ":" + localKey, gameScreens[localKey]);
-			}
+		const gameScreens = this.#gameModule.createScreens();
+		const localKeys = System.Object.keys(gameScreens);
+		for (const localKey of localKeys) {
+			this.registerScreen(this.#gameModule.getId() + ":" + localKey, gameScreens[localKey]);
 		}
 		const screenKeys = System.Object.keys(this.#screens);
 		for (const screenKey of screenKeys) {
@@ -174,11 +159,6 @@ class NoGraphicScene extends Scene {
 		});
 		setSoundEnabled(this.#settings.isSoundEnabled);
 
-		const directModule = this.findGameModule(this.#directGameId);
-		if (directModule !== null) {
-			this.enterGame(directModule.getId());
-			return;
-		}
 		this.changeScreen(Screen.title);
 	}
 
@@ -278,82 +258,40 @@ class NoGraphicScene extends Scene {
 	}
 
 	//==============================================================================
-	// 게임 모듈.
+	// 게임 모듈. (이 프로젝트가 만드는 게임 한 편입니다)
 	//==============================================================================
-	/** @returns { object[] } */
-	getGameModules() {
-		return this.#gameModules;
-	}
-
-	/**
-	 * @param { string } gameId
-	 * @returns { object } 없으면 null.
-	 */
-	findGameModule(gameId) {
-		for (const gameModule of this.#gameModules) {
-			if (gameModule.getId() === gameId) {
-				return gameModule;
-			}
-		}
-		return null;
-	}
-
 	/** @returns { object } */
-	getCurrentGameModule() {
-		return this.#currentGameModule;
+	getGameModule() {
+		return this.#gameModule;
 	}
 
 	//==============================================================================
-	// 길 찾기. (타이틀, 허브, 게임, 설정)
+	// 길 찾기. (타이틀, 게임, 설정)
 	//==============================================================================
 	goTitle() {
-		this.#currentGameModule = null;
 		stopMusic();
+		setPaletteRemap(null);
+		// 게임이 제 말에 맞춰 갈아 끼운 글꼴도 함께 되돌립니다. 타이틀은 늘 본디 글꼴입니다.
+		setFontOverrides(null);
+		setDisplayPaperColor(resolveRemapColorString(Colors.background));
 		this.changeScreen(Screen.title);
 	}
 
-	openHub() {
-		this.#currentGameModule = null;
-		stopMusic();
-		setPaletteRemap(null);
-		setDisplayPaperColor(resolveRemapColorString(Colors.background));
-		this.changeScreen(Screen.hub);
-	}
-
-	/**
-	 * @param { string } gameId
-	 */
-	enterGame(gameId) {
-		const gameModule = this.findGameModule(gameId);
+	//==============================================================================
+	// 게임 시작. (타이틀에서 확인을 누르면 옵니다)
+	//==============================================================================
+	enterGame() {
+		const gameModule = this.#gameModule;
 		if (gameModule === null) {
 			return;
 		}
-		this.#currentGameModule = gameModule;
 		const palette = gameModule.getPalette();
 		setPaletteRemap(palette === null ? null : buildPaletteRemap(palette));
 		setDisplayPaperColor(resolveRemapColorString(Colors.background));
 		gameModule.onEnter();
 		this.changeScreen(gameModule.getId() + ":" + gameModule.getEntryKey());
-		// 게임에 들어설 때는 옛날식으로 화면이 점 무늬로 차오릅니다. (사용자 요청, 2026-09-13)
+		// 게임에 들어설 때는 옛날식으로 화면이 점 무늬로 차오릅니다.
 		startScreenReveal();
-	}
-
-	exitToHub() {
-		if (this.#currentGameModule !== null) {
-			this.#hubScreen.selectGame(this.#currentGameModule.getId());
-		}
-		this.#currentGameModule = null;
-		setPaletteRemap(null);
-		// 편이 제 말에 맞춰 갈아 끼운 글꼴도 함께 되돌립니다. 허브와 타이틀은 늘 본디 글꼴입니다.
-		setFontOverrides(null);
-		setDisplayPaperColor(resolveRemapColorString(Colors.background));
-		// 한 편만 따로 띄운 것이면 나갈 곳이 그 게임의 첫 화면뿐입니다.
-		const directModule = this.findGameModule(this.#directGameId);
-		if (directModule !== null) {
-			this.enterGame(directModule.getId());
-			return;
-		}
-		this.changeScreen(Screen.hub);
 	}
 
 	openSettings() {
@@ -458,8 +396,8 @@ class NoGraphicScene extends Scene {
 
 	eraseProgress() {
 		clearAllGameData();
-		for (const gameModule of this.#gameModules) {
-			gameModule.onProgressErased();
+		if (this.#gameModule !== null) {
+			this.#gameModule.onProgressErased();
 		}
 	}
 
@@ -555,24 +493,6 @@ function readCurveScale(levelId) {
 
 
 //==============================================================================
-// 주소의 ?game=<id>. (없으면 "")
-//==============================================================================
-/**
- * @returns { string }
- */
-function readDirectGameId() {
-	try {
-		const searchParameters = new System.URLSearchParams(System.window.location.search);
-		const gameId = searchParameters.get("game");
-		return gameId === null ? "" : gameId;
-	}
-	catch (error) {
-		return "";
-	}
-}
-
-
-//==============================================================================
 // 엔진 기동. (가로 전용 1280 x 800, 스팀덱)
 //==============================================================================
 const engineConfiguration = new EngineConfiguration();
@@ -583,7 +503,7 @@ engineConfiguration.useStatistics = false;
 engineConfiguration.preserveDrawingBuffer = true;
 const engine = new Engine(engineConfiguration);
 System.document.title = GAME_TITLE;
-const scene = new NoGraphicScene();
+const scene = new GameScene();
 engine.run(scene);
 // 검증 스크립트(헤드리스 크롬)가 씬의 노드를 읽을 수 있게 엔진을 페이지에 둡니다.
 System.window.engine = engine;
