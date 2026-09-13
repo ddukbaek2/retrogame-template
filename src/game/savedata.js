@@ -115,10 +115,10 @@ export function clearAllGameData() {
 // 설정 기본값.
 //==============================================================================
 /**
- * @returns { object } { isSoundEnabled, displayMode, isMonitorFrameEnabled, isCurveEnabled, monitorColors }
+ * @returns { object } { isSoundEnabled, isMusicEnabled, displayMode, isMonitorFrameEnabled, curveLevel, monitorColors }
  */
 export function createDefaultSettings() {
-	return { isSoundEnabled: true, displayMode: "integer", isMonitorFrameEnabled: true, curveLevel: "high", monitorColors: "256" };
+	return { isSoundEnabled: true, isMusicEnabled: true, displayMode: "integer", isMonitorFrameEnabled: true, curveLevel: "high", monitorColors: "256" };
 }
 
 

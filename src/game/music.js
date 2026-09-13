@@ -168,6 +168,9 @@ const TRACKS = System.Object.freeze({
 
 
 let musicGain = null;
+// 배경음만 따로 끕니다. 효과음은 `beep.js` 의 스위치가 맡습니다.
+// (사용자 지시, 2026-09-14, "소리도 배경음 효과음 이렇게 나누고")
+let isMusicTurnedOn = true;
 let droneNodes = null;
 let trackName = "";
 let barIndex = 0;
@@ -602,7 +605,7 @@ function tick() {
 		// 아직 오디오가 열리지 않았습니다. (첫 입력 전) 열리면 그때부터 울립니다.
 		return;
 	}
-	if (!isSoundEnabled()) {
+	if (!isSoundEnabled() || !isMusicTurnedOn) {
 		destination.gain.cancelScheduledValues(audioContext.currentTime);
 		destination.gain.setValueAtTime(0, audioContext.currentTime);
 		return;
@@ -636,6 +639,32 @@ function tick() {
 /**
  * @param { string } name "town" | "shop" | "dungeon" | "battle"
  */
+//==============================================================================
+// 배경음 켜고 끄기. (효과음과 따로입니다)
+//==============================================================================
+/**
+ * @param { boolean } value
+ */
+export function setMusicEnabled(value) {
+	isMusicTurnedOn = value;
+	if (value) {
+		return;
+	}
+	// 끈 그 자리에서 소리를 내립니다. 다음 마디를 기다리지 않습니다.
+	const audioContext = readAudioContext();
+	if (audioContext === null || musicGain === null) {
+		return;
+	}
+	musicGain.gain.cancelScheduledValues(audioContext.currentTime);
+	musicGain.gain.setValueAtTime(0, audioContext.currentTime);
+}
+
+/** @returns { boolean } 배경음 설정이 켜져 있는지. */
+export function isMusicEnabled() {
+	return isMusicTurnedOn;
+}
+
+
 export function startMusic(name) {
 	if (TRACKS[name] === undefined || trackName === name) {
 		return;

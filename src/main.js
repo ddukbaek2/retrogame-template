@@ -21,7 +21,7 @@ import { attachVirtualPad } from "./game/virtualpad.js";
 import { drawText, setFontOverrides } from "./game/text.js";
 import { CommandReader, Command } from "./game/command.js";
 import { openAudio, setSoundEnabled, beepMove } from "./game/beep.js";
-import { stopMusic } from "./game/music.js";
+import { stopMusic, setMusicEnabled } from "./game/music.js";
 import { tickUiTime } from "./ui/uitime.js";
 import { readSettings, writeSettings, clearAllGameData, createDefaultSettings } from "./game/savedata.js";
 import { createGameModule } from "./game/gameentry.js";
@@ -158,6 +158,7 @@ class GameScene extends Scene {
 			contextEvent.preventDefault();
 		});
 		setSoundEnabled(this.#settings.isSoundEnabled);
+		setMusicEnabled(this.#settings.isMusicEnabled !== false);
 
 		this.changeScreen(Screen.title);
 	}
@@ -355,6 +356,7 @@ class GameScene extends Scene {
 	applySettings() {
 		writeSettings(this.#settings);
 		setSoundEnabled(this.#settings.isSoundEnabled);
+		setMusicEnabled(this.#settings.isMusicEnabled !== false);
 		setDisplayColorMode(this.#settings.monitorColors === undefined ? "256" : this.#settings.monitorColors);
 		// 볼록 효과는 모니터 안에서만 뜻이 있습니다. 프레임을 끄면 같이 꺼집니다. (사용자 지시, 2026-09-10)
 		const isFrameShown = this.#settings.isMonitorFrameEnabled !== false;

@@ -8,7 +8,8 @@ import { placeNode, moveNode } from "../ui/layout.js";
 import { drawText } from "../game/text.js";
 import { Command } from "../game/command.js";
 import { beepMove, beepConfirm, beepCancel, beepBlocked } from "../game/beep.js";
-import { Colors, UiFontSize, REFERENCE_RESOLUTION_WIDTH, DisplayModeOptions, MonitorColorOptions, CurveLevelOptions } from "../game/constants.js";
+import { Colors, UiFontSize, REFERENCE_RESOLUTION_WIDTH } from "../game/constants.js";
+import { createFrameSettingItems, applyGameLabels, handleFrameSettingItem } from "./settingitems.js";
 
 
 //==============================================================================
@@ -29,39 +30,6 @@ const LIST_WIDTH = 520;
 // 한 번에 보일 줄 수. 게임이 제 항목을 더하면 목록이 길어지므로 여기까지만 보이고 넘깁니다.
 const LIST_VISIBLE_ROWS = 10;
 const HINT_TEXT = "방향키 고르기, 좌우 바꾸기, 취소 돌아가기";
-
-
-//==============================================================================
-// 볼록 효과 칸에 적을 말.
-//
-// 볼록 효과는 모니터 안에서만 뜻이 있습니다. 프레임을 끄면 고를 수 없습니다.
-//==============================================================================
-/**
- * @param { object } settings
- * @returns { string }
- */
-function readCurveKey(settings) {
-	if (settings.isMonitorFrameEnabled === false) {
-		return "unavailable";
-	}
-	return settings.curveLevel;
-}
-
-/**
- * @param { object } settings
- * @returns { string }
- */
-function readCurveText(settings) {
-	if (settings.isMonitorFrameEnabled === false) {
-		return "쓸 수 없음";
-	}
-	for (const option of CurveLevelOptions) {
-		if (option.id === settings.curveLevel) {
-			return option.name;
-		}
-	}
-	return CurveLevelOptions[CurveLevelOptions.length - 1].name;
-}
 
 
 export class SettingsWindow extends ScreenNode {
@@ -112,45 +80,20 @@ export class SettingsWindow extends ScreenNode {
 	// 항목 다시 만들기. (값을 읽어 옵니다)
 	//==============================================================================
 	refreshItems() {
-		const settings = this.getScene().getSettings();
-		let monitorColorName = MonitorColorOptions[0].name;
-		for (const option of MonitorColorOptions) {
-			if (option.id === settings.monitorColors) {
-				monitorColorName = option.name;
-			}
-		}
-		let displayModeName = DisplayModeOptions[0].name;
-		for (const option of DisplayModeOptions) {
-			if (option.id === settings.displayMode) {
-				displayModeName = option.name;
-			}
-		}
+		const scene = this.getScene();
+		const settings = scene.getSettings();
 		const selectedIndex = this.#list.getSelectedIndex();
-		// 게임만의 항목을 앞에 세웁니다. 그 게임이 다루는 것이 먼저 보이는 편이 자연스럽습니다.
-		const gameModule = this.getScene().getGameModule();
+		// 앱 설정(소리, 화면, 모니터)이 먼저이고 그 게임만의 항목이 뒤에 섭니다.
+		// 어느 게임을 열든 앞쪽이 같은 자리에 있어야 손이 기억합니다.
+		// (사용자 지시, 2026-09-14, "소리 진동 화면 뭐 이런 순서가 맞는데 왜 게임내용 설정이 더 위에가있냐")
+		const gameModule = scene.getGameModule();
 		const gameItems = gameModule === null ? [] : gameModule.createSettingItems();
-		const frameItems = [
-			{ id: "sound", valueKey: settings.isSoundEnabled ? "on" : "off", label: "소리", valueText: settings.isSoundEnabled ? "켬" : "끔" },
-			{ id: "display", valueKey: settings.displayMode, label: "화면", valueText: displayModeName },
-			{ id: "frame", valueKey: settings.isMonitorFrameEnabled === false ? "off" : "on", label: "모니터 프레임", valueText: settings.isMonitorFrameEnabled === false ? "끔" : "켬" },
-			{ id: "curve", valueKey: readCurveKey(settings), label: "볼록 효과", valueText: readCurveText(settings) },
-			{ id: "colors", valueKey: settings.monitorColors, label: "모니터 색", valueText: monitorColorName },
-			{ id: "grid", label: "볼록 확인 격자" },
-			{ id: "reset", label: "설정 초기화" },
-			{ id: "erase", label: this.#isEraseArmed ? "정말 초기화" : "데이터 초기화" },
-			{ id: "close", label: "닫기" },
-		];
-		// 여러 말을 지원하는 게임은 틀 항목의 이름과 값도 제 말로 바꿔 답합니다.
-		if (gameModule !== null) {
-			for (const frameItem of frameItems) {
-				frameItem.label = gameModule.readSettingLabel(frameItem.id, frameItem.label);
-				if (frameItem.valueKey !== undefined) {
-					frameItem.valueText = gameModule.readSettingValue(frameItem.id, frameItem.valueKey, frameItem.valueText);
-				}
-			}
-		}
+		const frameItems = createFrameSettingItems(settings, this.#isEraseArmed);
+		applyGameLabels(frameItems, gameModule);
+		const closeItem = { id: "close", label: "닫기" };
+		applyGameLabels([closeItem], gameModule);
 		this.#list.setVisibleRowCount(LIST_VISIBLE_ROWS);
-		this.#list.setItems(gameItems.concat(frameItems));
+		this.#list.setItems(frameItems.concat(gameItems, [closeItem]));
 		this.#list.setSelectedIndex(selectedIndex);
 		placeNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5), LIST_TOP_Y, LIST_WIDTH, this.#list.readTotalHeight());
 	}
@@ -174,88 +117,13 @@ export class SettingsWindow extends ScreenNode {
 				return;
 			}
 		}
-		switch (itemId) {
-			case "sound": {
-				settings.isSoundEnabled = !settings.isSoundEnabled;
-				scene.applySettings();
-				break;
-			}
-			case "display": {
-				let optionIndex = 0;
-				for (let index = 0; index < DisplayModeOptions.length; ++index) {
-					if (DisplayModeOptions[index].id === settings.displayMode) {
-						optionIndex = index;
-					}
-				}
-				const optionCount = DisplayModeOptions.length;
-				optionIndex = (optionIndex + direction + optionCount) % optionCount;
-				settings.displayMode = DisplayModeOptions[optionIndex].id;
-				scene.applySettings();
-				break;
-			}
-			case "frame": {
-				settings.isMonitorFrameEnabled = settings.isMonitorFrameEnabled === false;
-				scene.applySettings();
-				break;
-			}
-			case "curve": {
-				// 모니터 프레임이 꺼져 있으면 볼록 효과를 쓸 수 없습니다.
-				if (settings.isMonitorFrameEnabled === false) {
-					break;
-				}
-				let optionIndex = CurveLevelOptions.length - 1;
-				for (let index = 0; index < CurveLevelOptions.length; ++index) {
-					if (CurveLevelOptions[index].id === settings.curveLevel) {
-						optionIndex = index;
-					}
-				}
-				const optionCount = CurveLevelOptions.length;
-				optionIndex = (optionIndex + direction + optionCount) % optionCount;
-				settings.curveLevel = CurveLevelOptions[optionIndex].id;
-				scene.applySettings();
-				break;
-			}
-			case "grid": {
-				// 켬 끔이 아니라 한 번 보여 주는 것입니다. 확인이나 취소를 누르면 되돌아옵니다.
-				settings.isTestGridEnabled = true;
-				scene.applySettings();
-				break;
-			}
-			case "reset": {
-				scene.resetSettings();
-				break;
-			}
-			case "colors": {
-				let optionIndex = 0;
-				for (let index = 0; index < MonitorColorOptions.length; ++index) {
-					if (MonitorColorOptions[index].id === settings.monitorColors) {
-						optionIndex = index;
-					}
-				}
-				const optionCount = MonitorColorOptions.length;
-				optionIndex = (optionIndex + direction + optionCount) % optionCount;
-				settings.monitorColors = MonitorColorOptions[optionIndex].id;
-				scene.applySettings();
-				break;
-			}
-			case "erase": {
-				if (this.#isEraseArmed) {
-					scene.eraseProgress();
-					this.#isEraseArmed = false;
-				}
-				else {
-					this.#isEraseArmed = true;
-				}
-				break;
-			}
-			case "close": {
-				scene.closeSettings();
-				break;
-			}
-			default: {
-				break;
-			}
+		if (itemId === "close") {
+			scene.closeSettings();
+			return;
 		}
+		const eraseState = { isArmed: this.#isEraseArmed };
+		handleFrameSettingItem(scene, itemId, direction, eraseState);
+		this.#isEraseArmed = eraseState.isArmed;
 		this.refreshItems();
 	}
 
