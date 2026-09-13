@@ -12,7 +12,11 @@ import { Colors, UiFontSize, REFERENCE_RESOLUTION_WIDTH, DisplayModeOptions, Mon
 
 
 //==============================================================================
-// 설정. (소리, 화면, 진행 지우기, 닫기)
+// 설정. (게임 항목 + 소리, 화면, 진행 지우기, 닫기)
+//
+// **설정 화면은 이 하나입니다.** 게임이 따로 설정 화면을 만들지 않습니다.
+// 게임만의 항목은 `GameModule.createSettingItems()` 로 내면 이 목록 앞에 함께 섭니다.
+// 타이틀에서 열든 게임 안에서 열든 같은 화면입니다.
 //
 // 값은 좌우로 바꿉니다. 확인도 다음 값으로 넘깁니다.
 // 진행 지우기는 되돌릴 수 없어서 두 번 눌러야 합니다. (한 번 누르면 항목 이름이 "정말 지우기" 로 바뀝니다)
@@ -22,6 +26,8 @@ import { Colors, UiFontSize, REFERENCE_RESOLUTION_WIDTH, DisplayModeOptions, Mon
 const TITLE_CENTER_Y = 76;
 const LIST_TOP_Y = 148;
 const LIST_WIDTH = 520;
+// 한 번에 보일 줄 수. 게임이 제 항목을 더하면 목록이 길어지므로 여기까지만 보이고 넘깁니다.
+const LIST_VISIBLE_ROWS = 10;
 const HINT_TEXT = "방향키 고르기, 좌우 바꾸기, 취소 돌아가기";
 
 
@@ -109,7 +115,10 @@ export class SettingsWindow extends ScreenNode {
 			}
 		}
 		const selectedIndex = this.#list.getSelectedIndex();
-		this.#list.setItems([
+		// 게임만의 항목을 앞에 세웁니다. 그 게임이 다루는 것이 먼저 보이는 편이 자연스럽습니다.
+		const gameModule = this.getScene().getGameModule();
+		const gameItems = gameModule === null ? [] : gameModule.createSettingItems();
+		const frameItems = [
 			{ id: "sound", label: "소리", valueText: settings.isSoundEnabled ? "켬" : "끔" },
 			{ id: "display", label: "화면", valueText: displayModeName },
 			{ id: "frame", label: "모니터 프레임", valueText: settings.isMonitorFrameEnabled === false ? "끔" : "켬" },
@@ -119,7 +128,15 @@ export class SettingsWindow extends ScreenNode {
 			{ id: "reset", label: "설정 초기화" },
 			{ id: "erase", label: this.#isEraseArmed ? "정말 초기화" : "데이터 초기화" },
 			{ id: "close", label: "닫기" },
-		]);
+		];
+		// 여러 말을 지원하는 게임은 틀 항목의 이름도 제 말로 바꿔 답합니다.
+		if (gameModule !== null) {
+			for (const frameItem of frameItems) {
+				frameItem.label = gameModule.readSettingLabel(frameItem.id, frameItem.label);
+			}
+		}
+		this.#list.setVisibleRowCount(LIST_VISIBLE_ROWS);
+		this.#list.setItems(gameItems.concat(frameItems));
 		this.#list.setSelectedIndex(selectedIndex);
 		placeNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5), LIST_TOP_Y, LIST_WIDTH, this.#list.readTotalHeight());
 	}
@@ -134,6 +151,15 @@ export class SettingsWindow extends ScreenNode {
 	handleItem(itemId, direction) {
 		const scene = this.getScene();
 		const settings = scene.getSettings();
+		// 게임이 낸 항목이면 게임이 처리합니다.
+		const gameModule = scene.getGameModule();
+		if (gameModule !== null) {
+			const isHandled = gameModule.handleSettingItem(itemId, direction);
+			if (isHandled) {
+				this.refreshItems();
+				return;
+			}
+		}
 		switch (itemId) {
 			case "sound": {
 				settings.isSoundEnabled = !settings.isSoundEnabled;
