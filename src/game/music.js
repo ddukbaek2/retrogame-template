@@ -31,7 +31,9 @@ const SWITCH_FADE_SECONDS = 0.08;
 // 짜는 일을 이 간격으로 합니다. (밀리초)
 const TICK_MILLISECONDS = 120;
 // 배경음은 효과음보다 작아야 합니다.
-const MUSIC_VOLUME = 0.5;
+// 배경음이 전체 소리에서 차지하는 몫. 효과음과 같은 master 를 지나므로 이 값이 곧 상대 크기입니다.
+// 0.5 로 두었더니 있는지 없는지 모를 만큼 작았습니다. (사용자 지적, 2026-09-15, "너무 소리크기가 작았어")
+const MUSIC_VOLUME = 1.0;
 // 켜고 끌 때 이만큼 걸쳐 오갑니다. (초)
 const FADE_SECONDS = 0.9;
 // 한 마디는 네 박입니다.

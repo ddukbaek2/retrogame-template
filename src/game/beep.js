@@ -15,7 +15,7 @@ const System = globalThis;
 let audioContext = null;
 let masterGain = null;
 let isEnabled = true;
-const MASTER_VOLUME = 0.18;
+const MASTER_VOLUME = 0.32;
 
 
 //==============================================================================
