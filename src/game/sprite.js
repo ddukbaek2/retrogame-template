@@ -155,3 +155,90 @@ export function drawSprite(graphic, spriteId, centerX, centerY, size, colorKeys,
 	graphic.setImageTintColor(null);
 	graphic.setImageSmoothingEnabled(wasSmoothing);
 }
+
+
+//==============================================================================
+// 마스크 한 장짜리 그림. (제목 로고처럼 단색으로 찍는 것)
+//
+// 낱개 시트와 달리 밝기 단이 없습니다. 알파만 있는 그림 한 장을 받아 `Colors` 의 열쇠 하나로
+// 통째로 물들여 찍습니다. 색 수가 1 비트로 내려가도 어긋나지 않습니다.
+//==============================================================================
+const maskAssets = new Map();
+
+
+//==============================================================================
+// 마스크 그림 받기. (이름으로 들고 있습니다)
+//==============================================================================
+/**
+ * @param { string } name
+ * @param { string } imagePath
+ */
+export async function loadMaskImage(name, imagePath) {
+	const asset = new ImageAsset();
+	try {
+		await asset.load(imagePath);
+		maskAssets.set(name, asset);
+	}
+	catch (error) {
+		console.error("[sprite] 그림을 받지 못했습니다: " + imagePath);
+	}
+}
+
+
+//==============================================================================
+// 마스크 그림이 준비되었는지.
+//==============================================================================
+/**
+ * @param { string } name
+ * @returns { boolean }
+ */
+export function isMaskImageLoaded(name) {
+	const asset = maskAssets.get(name);
+	if (asset === undefined) {
+		return false;
+	}
+	return asset.isLoaded();
+}
+
+
+//==============================================================================
+// 마스크 그림 찍기. (가운데 맞춤, 정수 배율)
+//
+// 도트가 깨지지 않게 배율은 정수만 씁니다. 주어진 높이에 맞는 가장 큰 정수 배를 고릅니다.
+//==============================================================================
+/**
+ * @param { object } graphic
+ * @param { string } name
+ * @param { number } centerX
+ * @param { number } centerY
+ * @param { number } wantedHeight 이 높이에 맞춰 정수 배를 고릅니다.
+ * @param { string } colorKey
+ */
+export function drawMaskImage(graphic, name, centerX, centerY, wantedHeight, colorKey) {
+	const asset = maskAssets.get(name);
+	if (asset === undefined || !asset.isLoaded()) {
+		return;
+	}
+	const image = asset.getImage();
+	const sourceWidth = image.width;
+	const sourceHeight = image.height;
+	if (sourceWidth <= 0 || sourceHeight <= 0) {
+		return;
+	}
+	let scale = System.Math.floor(wantedHeight / sourceHeight);
+	if (scale < 1) {
+		scale = 1;
+	}
+	const drawWidth = sourceWidth * scale;
+	const drawHeight = sourceHeight * scale;
+	const drawLeft = System.Math.round(centerX - drawWidth * 0.5);
+	const drawTop = System.Math.round(centerY - drawHeight * 0.5);
+	const wasSmoothing = graphic.isImageSmoothingEnabled();
+	graphic.setImageSmoothingEnabled(false);
+	graphic.setImageTintColor(getColor(colorKey));
+	graphic.drawImageWithSourceAndDestination(image,
+		0, 0, sourceWidth, sourceHeight,
+		drawLeft, drawTop, drawWidth, drawHeight);
+	graphic.setImageTintColor(null);
+	graphic.setImageSmoothingEnabled(wasSmoothing);
+}

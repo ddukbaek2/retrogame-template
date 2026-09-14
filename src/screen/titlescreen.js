@@ -10,6 +10,7 @@ import { Command } from "../game/command.js";
 import { beepMove, beepConfirm } from "../game/beep.js";
 import { readUiElapsedSeconds } from "../ui/uitime.js";
 import { Colors, UiFontSize, GAME_TITLE, REFERENCE_RESOLUTION_WIDTH } from "../game/constants.js";
+import { isMaskImageLoaded, drawMaskImage } from "../game/sprite.js";
 
 
 //==============================================================================
@@ -26,6 +27,10 @@ const LIST_WIDTH = 240;
 const BREATH_HEIGHT = 4;
 const BREATH_PERIOD = 3.2;
 const HINT_TEXT = "방향키 고르기, 확인 정하기";
+// 제목 그림을 세울 높이. 도트가 깨지지 않게 정수 배로만 키웁니다.
+const TITLE_IMAGE_HEIGHT = 128;
+// 제목 그림을 들고 있는 이름. 씬이 이 이름으로 받아 둡니다.
+export const TITLE_IMAGE_NAME = "title";
 
 
 export class TitleScreen extends ScreenNode {
@@ -105,7 +110,14 @@ export class TitleScreen extends ScreenNode {
 		}
 		const offset = this.readEnterOffset();
 		const breath = System.Math.round(System.Math.sin(readUiElapsedSeconds() * System.Math.PI * 2 / BREATH_PERIOD) * BREATH_HEIGHT);
-		drawText(graphic, GAME_TITLE, REFERENCE_RESOLUTION_WIDTH * 0.5 + offset, TITLE_CENTER_Y + breath, UiFontSize.title, Colors.textPrimary, "center");
+		// 게임이 제목 그림을 냈으면 그것을 세웁니다. 없으면 이름을 글자로 씁니다.
+		if (isMaskImageLoaded(TITLE_IMAGE_NAME)) {
+			drawMaskImage(graphic, TITLE_IMAGE_NAME, REFERENCE_RESOLUTION_WIDTH * 0.5 + offset,
+				TITLE_CENTER_Y + breath, TITLE_IMAGE_HEIGHT, Colors.textPrimary);
+		}
+		else {
+			drawText(graphic, GAME_TITLE, REFERENCE_RESOLUTION_WIDTH * 0.5 + offset, TITLE_CENTER_Y + breath, UiFontSize.title, Colors.textPrimary, "center");
+		}
 		moveNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5) + offset, LIST_TOP_Y);
 		this.drawHint(graphic, HINT_TEXT);
 		super.draw(graphic);

@@ -25,7 +25,8 @@ import { stopMusic, setMusicEnabled } from "./game/music.js";
 import { tickUiTime } from "./ui/uitime.js";
 import { readSettings, writeSettings, clearAllGameData, createDefaultSettings } from "./game/savedata.js";
 import { createGameModule } from "./game/gameentry.js";
-import { TitleScreen } from "./screen/titlescreen.js";
+import { loadMaskImage } from "./game/sprite.js";
+import { TitleScreen, TITLE_IMAGE_NAME } from "./screen/titlescreen.js";
 import { SettingsWindow } from "./panel/settingswindow.js";
 import {
 	GAME_TITLE, Colors, Screen, UiFontSize, FontPaths,
@@ -97,6 +98,11 @@ class GameScene extends Scene {
 
 		this.#gameModule = createGameModule(this);
 		await this.#gameModule.load();
+		// 게임이 제목 그림을 냈으면 받아 둡니다. 타이틀이 이름을 글자로 쓰는 대신 그것을 세웁니다.
+		const titleImagePath = this.#gameModule.readTitleImagePath();
+		if (titleImagePath !== null && titleImagePath !== "") {
+			await loadMaskImage(TITLE_IMAGE_NAME, titleImagePath);
+		}
 		this.#loadedRatio = 1;
 
 		const root = this.getRoot();
