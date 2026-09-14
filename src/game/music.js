@@ -420,8 +420,11 @@ function schedulePluck(noteNumber, startTime, seconds, volume, waveType, filterH
 	}
 	const filter = audioContext.createBiquadFilter();
 	filter.type = "lowpass";
+	// 필터를 너무 닫으면 배음이 다 깎여 소리가 둔해집니다. 8 비트 음원의 맛은 그 배음에 있습니다.
+	// 0.35 배까지 닫았더니 2800Hz 가 980Hz 가 되어 선율이 뭉개졌습니다.
+	// (사용자 지적, 2026-09-15, "wav 가 훨씬 다채롭게 들리는데")
 	filter.frequency.setValueAtTime(filterHertz, startTime);
-	filter.frequency.exponentialRampToValueAtTime(filterHertz * 0.35, startTime + seconds);
+	filter.frequency.exponentialRampToValueAtTime(filterHertz * 0.8, startTime + seconds);
 	const gain = audioContext.createGain();
 	gain.gain.setValueAtTime(0.0001, startTime);
 	gain.gain.linearRampToValueAtTime(volume, startTime + 0.012);
@@ -693,7 +696,7 @@ function scheduleBar(track, startTime) {
 		const isFirst = beat === 0;
 		const noteNumber = BASS_NOTE + bar.bass;
 		schedulePluck(noteNumber, startTime + beatSeconds * beat, beatSeconds * 0.9,
-			track.bassVolume * (isFirst ? 1 : 0.72), track.bassWave, 320);
+			track.bassVolume * (isFirst ? 1 : 0.72), track.bassWave, 900);
 	}
 
 	// 북. 전투에서만 칩니다.
