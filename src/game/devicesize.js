@@ -4,7 +4,7 @@
 const System = globalThis;
 import { applyPixelFixedScale } from "./viewscale.js";
 import { syncCrtCanvas, isCrtOverlayActive, setCrtMonitorPlacement } from "./crt.js";
-import { readVirtualPadHeight, setVirtualPadPlacement } from "./virtualpad.js";
+import { readVirtualPadReserve, setVirtualPadPlacement } from "./virtualpad.js";
 import { REFERENCE_RESOLUTION_WIDTH, REFERENCE_RESOLUTION_HEIGHT, WINDOW_REFERENCE_WIDTH, WINDOW_REFERENCE_HEIGHT } from "./constants.js";
 
 
@@ -119,9 +119,10 @@ export function refreshDisplayPlacement() {
  * @param { object } displayMode
  * @param { number } availableWidth
  * @param { number } availableHeight
+ * @param { number } originLeft 쓸 수 있는 자리가 창 왼쪽에서 얼마나 떨어져 시작하는지. (가로 모드의 가상 패드 기둥)
  * @returns { object } 창 안에 놓인 게임 화면의 자리와 크기입니다. (CSS px)
  */
-function placeGameScreen(displayMode, availableWidth, availableHeight) {
+function placeGameScreen(displayMode, availableWidth, availableHeight, originLeft) {
 	const baseWidth = displayMode.id === "half" ? WINDOW_REFERENCE_WIDTH / 2 : WINDOW_REFERENCE_WIDTH;
 	const baseHeight = displayMode.id === "half" ? WINDOW_REFERENCE_HEIGHT / 2 : WINDOW_REFERENCE_HEIGHT;
 	let monitorWidth = baseWidth;
@@ -141,7 +142,7 @@ function placeGameScreen(displayMode, availableWidth, availableHeight) {
 		monitorWidth = System.Math.round(baseWidth * deviceScale);
 		monitorHeight = System.Math.round(baseHeight * deviceScale);
 	}
-	const monitorLeft = System.Math.round((availableWidth - monitorWidth) * 0.5);
+	const monitorLeft = originLeft + System.Math.round((availableWidth - monitorWidth) * 0.5);
 	const monitorTop = System.Math.round((availableHeight - monitorHeight) * 0.5);
 	setCrtMonitorPlacement(monitorLeft, monitorTop, monitorWidth, monitorHeight);
 	return { left: monitorLeft, top: monitorTop, width: monitorWidth, height: monitorHeight };
@@ -165,16 +166,26 @@ export function applyDisplayMode(modeIndex) {
 		return;
 	}
 
-	const availableWidth = System.window.innerWidth;
-	// 손가락으로 노는 기기에서는 화면 아래에 가상 패드가 서므로 그만큼 덜어 낸 자리에 모니터를 놓습니다.
-	// (사용자 지시, 2026-09-13, "모바일 앱만 게임 화면과 별개로 모니터 아래에 가상 키패드가 있는 거야")
-	const padHeight = readVirtualPadHeight(System.window.innerHeight);
-	const availableHeight = System.window.innerHeight - padHeight;
+	// 손가락으로 노는 기기에서는 가상 패드가 서므로 그만큼 덜어 낸 자리에 모니터를 놓습니다.
+	// 세로면 아래에 한 덩이, 가로면 좌우 기둥으로 갈라 섭니다.
+	// (사용자 지시, 2026-09-13, "모바일 앱만 게임 화면과 별개로 모니터 아래에 가상 키패드가 있는 거야",
+	// 2026-09-15, "폰이 세로모드일때만 나오는거고 가로모드일때는 좌우로 분리해서 가상키패드가 나와줬으면해")
+	const windowWidth = System.window.innerWidth;
+	const windowHeight = System.window.innerHeight;
+	const padReserve = readVirtualPadReserve(windowWidth, windowHeight);
+	const availableWidth = windowWidth - padReserve.side * 2;
+	const availableHeight = windowHeight - padReserve.bottom;
 	// 화면은 세 겹입니다. 창(브라우저) 안에 게임 화면(1280 × 800)이 놓이고, 그 안에 브라운관 화면(960 × 720)이 놓입니다.
 	// 화면 모드가 재는 것은 늘 가운데의 게임 화면이고, 그 바깥은 검은 띠입니다.
-	const gameScreenRect = placeGameScreen(displayMode, availableWidth, availableHeight);
-	if (padHeight > 0) {
-		setVirtualPadPlacement(0, availableHeight, availableWidth, padHeight);
+	const gameScreenRect = placeGameScreen(displayMode, availableWidth, availableHeight, padReserve.side);
+	if (padReserve.bottom > 0) {
+		setVirtualPadPlacement("bottom", [{ left: 0, top: availableHeight, width: windowWidth, height: padReserve.bottom }]);
+	}
+	else if (padReserve.side > 0) {
+		setVirtualPadPlacement("sides", [
+			{ left: 0, top: 0, width: padReserve.side, height: windowHeight },
+			{ left: windowWidth - padReserve.side, top: 0, width: padReserve.side, height: windowHeight },
+		]);
 	}
 	canvas.style.position = "absolute";
 	canvas.style.imageRendering = "pixelated";
