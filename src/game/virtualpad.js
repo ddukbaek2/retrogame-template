@@ -311,11 +311,11 @@ function layoutButtons() {
 		{ id: "b", command: Command.cancel, shape: "face", label: "B",
 			left: faceRightX, top: faceCenterY - System.Math.round(faceSize * 0.5),
 			width: faceSize, height: faceSize, isPressed: false },
-		// 셀렉트와 스타트는 아직 하는 일이 없습니다.
-		{ id: "select", command: "", shape: "small", label: "SELECT",
+		// 셀렉트는 지도, 스타트는 메뉴입니다. 키보드의 Shift 와 Enter 와 같습니다. (사용자 지시, 2026-09-15)
+		{ id: "select", command: Command.select, shape: "small", label: "SELECT",
 			left: smallCenterX - smallWidth - System.Math.round(smallGap * 0.5), top: smallTop,
 			width: smallWidth, height: smallHeight, isPressed: false },
-		{ id: "start", command: "", shape: "small", label: "START",
+		{ id: "start", command: Command.menu, shape: "small", label: "START",
 			left: smallCenterX + System.Math.round(smallGap * 0.5), top: smallTop,
 			width: smallWidth, height: smallHeight, isPressed: false },
 	];

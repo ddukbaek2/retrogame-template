@@ -12,7 +12,9 @@ import { REPEAT_DELAY_SECONDS, REPEAT_INTERVAL_SECONDS, STICK_THRESHOLD } from "
 // 명령. (이 게임의 입력은 이 일곱 가지뿐입니다)
 //
 // 마우스는 없습니다. 키보드의 방향키 + 확인, 취소, 게임패드의 십자키 + A, B 가 전부입니다.
-// 메뉴는 ESC / Start 로도 열립니다. (취소를 더 누를 것이 없을 때도 열립니다)
+// 메뉴는 Enter / START 로 엽니다. ESC 는 취소이고, 취소를 더 누를 것이 없을 때도 메뉴가 열립니다.
+// Shift / SELECT 는 게임이 정하는 보조 단추입니다. (사용자 지시, 2026-09-15, "엔터(START), 쉬프트(SELECT)",
+// "컨트롤러에서는 SHARE(SELECT), MENU(START) 로 맵핑되어있어야해")
 //==============================================================================
 export const Command = System.Object.freeze({
 	up: "up",
@@ -22,6 +24,7 @@ export const Command = System.Object.freeze({
 	confirm: "confirm",
 	cancel: "cancel",
 	menu: "menu",
+	select: "select",
 });
 
 export const DIRECTION_COMMANDS = System.Object.freeze([Command.up, Command.down, Command.left, Command.right]);
@@ -43,15 +46,17 @@ const KEY_COMMANDS = System.Object.freeze({
 	KeyA: Command.left,
 	ArrowRight: Command.right,
 	KeyD: Command.right,
-	Enter: Command.confirm,
-	NumpadEnter: Command.confirm,
+	Enter: Command.menu,
+	NumpadEnter: Command.menu,
 	Space: Command.confirm,
 	KeyZ: Command.confirm,
 	KeyJ: Command.confirm,
 	Backspace: Command.cancel,
 	KeyX: Command.cancel,
 	KeyK: Command.cancel,
-	Escape: Command.menu,
+	Escape: Command.cancel,
+	ShiftLeft: Command.select,
+	ShiftRight: Command.select,
 });
 
 // 게임패드 단추 → 명령. (W3C 표준 매핑)
@@ -63,6 +68,7 @@ const PAD_COMMANDS = System.Object.freeze({
 	[GamepadButtonCode.A_CROSS]: Command.confirm,
 	[GamepadButtonCode.B_CIRCLE]: Command.cancel,
 	[GamepadButtonCode.X_SQUARE]: Command.cancel,
+	[GamepadButtonCode.SHARE_VIEW]: Command.select,
 	[GamepadButtonCode.OPTIONS_MENU]: Command.menu,
 });
 

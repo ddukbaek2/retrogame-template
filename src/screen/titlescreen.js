@@ -87,7 +87,9 @@ export class TitleScreen extends ScreenNode {
 	 * @param { string } command
 	 */
 	handleCommand(command) {
-		const result = this.#list.handleCommand(command);
+		// 타이틀에서는 START 도 고른 것을 정합니다. "PRESS START" 의 관례입니다. (사용자 지시, 2026-09-15)
+		const effectiveCommand = command === Command.menu ? Command.confirm : command;
+		const result = this.#list.handleCommand(effectiveCommand);
 		if (result === "move") {
 			beepMove();
 		}

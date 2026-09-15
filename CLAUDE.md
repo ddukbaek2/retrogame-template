@@ -82,7 +82,7 @@
 - **런처(`launcher.html`, `webtemplate/index.html`)는 표준 틀로 둡니다.** 캔버스가 `100vw × 100vh` 이고, 브라운관과 모니터 테두리는 런처와 무관한 개념입니다. 도트 보간 끄기, 캔버스 자리 잡기는 `src/game/devicesize.js` 가 코드로 합니다.
 
 ## 조작 방침
-- **입력은 방향 넷 + 확인 + 취소 (+ 메뉴) 가 기본입니다.** 키보드는 방향키, WASD / Enter, Space, Z / Backspace, X / ESC, 게임패드는 십자키, 왼쪽 스틱 / A / B / Start. (`src/game/command.js`)
+- **입력은 방향 넷 + 확인 + 취소 + 메뉴 + 셀렉트입니다.** 키보드는 방향키, WASD / Space, Z, J (A 확인) / ESC, Backspace, X, K (B 취소) / Enter (START 메뉴) / Shift (SELECT), 게임패드는 십자키, 왼쪽 스틱 / A / B / OPTIONS, MENU (START) / SHARE, VIEW (SELECT). (`src/game/command.js`)
 - **마우스는 왼쪽이 확인, 오른쪽이 취소입니다.** 오른쪽 단추의 브라우저 기본 메뉴는 막습니다. 휠과 호버는 쓰지 않습니다.
 - **마우스, 손가락으로 항목을 눌러 고를 수 있습니다.** 창 좌표를 렌즈 왜곡까지 되짚어 게임 좌표로 바꾸고(`crt.js` 의 `mapWindowPointToGame`), 그 자리의 목록 항목을 고릅니다.
 - **손가락은 됩니다.** 끌면 그 방향을 누르고 있는 것, 톡 치면 확인, 두 손가락은 취소, 길게 누르면 메뉴입니다.
