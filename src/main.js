@@ -16,7 +16,7 @@ import { buildPaletteRemap } from "./game/identity.js";
 import { installInputSourceListeners, readInputSource } from "./game/inputsource.js";
 import { drawInputIcon } from "./ui/inputicon.js";
 import { drawTestGrid } from "./ui/testgrid.js";
-import { attachCrt, applyCrtOptions, isCrtOverlayActive, mapWindowPointToGame, startScreenReveal, advanceScreenReveal } from "./game/crt.js";
+import { attachCrt, applyCrtOptions, isCrtOverlayActive, mapWindowPointToGame, startScreenReveal, advanceScreenReveal, readRevealRatio, readDitherThreshold } from "./game/crt.js";
 import { attachVirtualPad } from "./game/virtualpad.js";
 import { drawText, setFontOverrides } from "./game/text.js";
 import { CommandReader, Command } from "./game/command.js";
@@ -478,6 +478,48 @@ class GameScene extends Scene {
 		if (!isCrtOverlayActive()) {
 			const inputSource = readInputSource();
 			drawInputIcon(graphic, inputSource);
+			// 곳이 바뀔 때 점 무늬로 차오르는 것은 덮개의 셰이더가 맡습니다. 덮개를 못 쓰면
+			// 같은 무늬를 여기서 2D 로 그립니다. 브라운관을 꺼도 효과가 사라지지 않습니다.
+			drawRevealMask(graphic);
+		}
+	}
+}
+
+
+//==============================================================================
+// 점 무늬 가리개. (덮개 없이 차오르는 효과를 그립니다)
+//
+// 셰이더와 같은 굵기(REVEAL_CELL_SIZE)와 같은 바이어 표를 씁니다. 한 줄에서 이어진 검은 칸은
+// 사각형 하나로 묶어 그립니다.
+//==============================================================================
+const REVEAL_CELL_SIZE = 6;
+
+/**
+ * @param { object } graphic
+ */
+function drawRevealMask(graphic) {
+	const ratio = readRevealRatio();
+	if (ratio >= 1) {
+		return;
+	}
+	const columnCount = System.Math.ceil(REFERENCE_RESOLUTION_WIDTH / REVEAL_CELL_SIZE);
+	const rowCount = System.Math.ceil(REFERENCE_RESOLUTION_HEIGHT / REVEAL_CELL_SIZE);
+	// 꺼진 앞머리는 바탕색, 그 뒤 안 드러난 칸은 흐린 색입니다. 검은 바탕에서도 마스크가 보입니다.
+	const maskColor = ratio < 0 ? getColor(Colors.background) : getColor(Colors.textFaint);
+	graphic.setFillColor(maskColor);
+	for (let rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
+		let runStart = -1;
+		for (let columnIndex = 0; columnIndex <= columnCount; ++columnIndex) {
+			const isDark = columnIndex < columnCount && readDitherThreshold(columnIndex, rowIndex) >= ratio;
+			if (isDark && runStart < 0) {
+				runStart = columnIndex;
+			}
+			else if (!isDark && runStart >= 0) {
+				const runRect = readRect(runStart * REVEAL_CELL_SIZE, rowIndex * REVEAL_CELL_SIZE,
+					(columnIndex - runStart) * REVEAL_CELL_SIZE, REVEAL_CELL_SIZE);
+				graphic.drawRect(runRect);
+				runStart = -1;
+			}
 		}
 	}
 }

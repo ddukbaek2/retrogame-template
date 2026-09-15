@@ -172,10 +172,15 @@ void main() {
 		// 화면 구멍 안에서만 차오릅니다. 모니터까지 같이 나타나면 어색합니다.
 		vec2 revealUv = (pixel - uScreenRect.xy) / uScreenRect.zw;
 		if (revealUv.x >= 0.0 && revealUv.x <= 1.0 && revealUv.y >= 0.0 && revealUv.y <= 1.0) {
-			// 점 무늬가 굵어야 옛 화면처럼 보입니다. 화면 점 세 칸을 한 칸으로 셉니다.
-			float threshold = readDitherThreshold(floor(pixel / 3.0));
+			// 점 무늬가 굵어야 옛 화면처럼 보입니다. 화면 점 여섯 칸을 한 칸으로 셉니다.
+			// (사용자 지시, 2026-09-15, "마을진입시 화면효과있자나 좀 더 티나게 해주고")
+			float threshold = readDitherThreshold(floor(pixel / 6.0));
 			if (threshold >= uReveal) {
-				result = vec3(0.0, 0.0, 0.0);
+				// 아직 안 드러난 칸은 꺼진 형광면처럼 어두운 회색입니다. 검정으로 두면 검은 바탕에서
+				// 마스크가 안 보이고 글자와 선만 점점이 잘려 깜빡이는 것처럼 보입니다.
+				// 앞머리(uReveal 이 0 보다 작을 때)는 화면이 꺼진 것이니 검정입니다.
+				// (사용자 지적, 2026-09-16, "페이드인연출말야 하얀색이 뭔가 보이는것같기도한데")
+				result = uReveal < 0.0 ? vec3(0.0, 0.0, 0.0) : vec3(0.14, 0.14, 0.13);
 			}
 		}
 	}
@@ -595,9 +600,11 @@ export function syncCrtCanvas() {
 
 
 // 다 드러나기까지 걸리는 시간. (초)
-const REVEAL_SECONDS = 0.9;
+const REVEAL_SECONDS = 1.4;
 // 몇 단으로 나누어 차오르는지. 단이 적어야 옛 화면처럼 툭툭 끊겨 보입니다.
-const REVEAL_STEPS = 12;
+const REVEAL_STEPS = 10;
+// 앞머리 이만큼은 아주 검게 멈춰 있습니다. 검게 끊겼다가 차오르는 것이 눈에 띕니다.
+const REVEAL_HOLD_RATIO = 0.18;
 
 let revealTimer = 0;
 let revealSeconds = REVEAL_SECONDS;
@@ -633,15 +640,44 @@ export function advanceScreenReveal(timeDelta) {
 // 지금 얼마나 드러났는지. (0 ~ 1, 단으로 끊어 돌려줍니다)
 //==============================================================================
 /**
- * @returns { number }
+ * @returns { number } 0 ~ 1. 앞머리(꺼진 채)면 -1 입니다.
  */
-function readRevealRatio() {
+export function readRevealRatio() {
 	if (revealTimer <= 0) {
 		return 1;
 	}
-	const ratio = 1 - revealTimer / revealSeconds;
+	const elapsed = 1 - revealTimer / revealSeconds;
+	if (elapsed < REVEAL_HOLD_RATIO) {
+		// 앞머리는 화면이 꺼진 것입니다. 0 이 아니라 음수로 알려 마스크 색을 가릅니다.
+		return -1;
+	}
+	const ratio = (elapsed - REVEAL_HOLD_RATIO) / (1 - REVEAL_HOLD_RATIO);
 	const stepped = System.Math.floor(ratio * REVEAL_STEPS) / REVEAL_STEPS;
 	return System.Math.min(1, stepped);
+}
+
+
+//==============================================================================
+// 점 무늬 문턱. (덮개를 못 쓸 때 화면이 같은 무늬를 2D 로 그리려고 씁니다)
+//
+// 셰이더의 표와 같은 4 × 4 바이어 표입니다. 0 ~ 1 로 돌려줍니다.
+//==============================================================================
+const DITHER_TABLE = System.Object.freeze([
+	0, 8, 2, 10,
+	12, 4, 14, 6,
+	3, 11, 1, 9,
+	15, 7, 13, 5,
+]);
+
+/**
+ * @param { number } cellX
+ * @param { number } cellY
+ * @returns { number }
+ */
+export function readDitherThreshold(cellX, cellY) {
+	const x = ((cellX % 4) + 4) % 4;
+	const y = ((cellY % 4) + 4) % 4;
+	return DITHER_TABLE[x + y * 4] / 16;
 }
 
 
