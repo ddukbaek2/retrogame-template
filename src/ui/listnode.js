@@ -70,7 +70,7 @@ export class ListNode extends WorldNode {
 	}
 
 	//==============================================================================
-	// 항목 지정. ({ id, label, valueText?, isEnabled? })
+	// 항목 지정. ({ id, label, valueText?, isEnabled?, colorKey? })
 	//==============================================================================
 	/**
 	 * @param { object[] } items
@@ -479,7 +479,8 @@ export class ListNode extends WorldNode {
 			const centerY = rowIndex * this.#lineHeight + System.Math.round(this.#lineHeight * 0.5);
 			let colorKey = Colors.textPrimary;
 			if (!isEnabled) {
-				colorKey = Colors.textDim;
+				// 고를 수 없는 항목도 제 색을 가질 수 있습니다. (읽기만 하는 기록 같은 것)
+				colorKey = item.colorKey === undefined ? Colors.textDim : item.colorKey;
 			}
 			else if (isSelected) {
 				colorKey = Colors.accent;
