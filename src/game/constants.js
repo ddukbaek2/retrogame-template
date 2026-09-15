@@ -123,6 +123,8 @@ export const MonitorColorOptions = System.Object.freeze([
 	{ id: "16", name: "4 비트, 16 색" },
 	{ id: "256", name: "8 비트, 256 색" },
 ]);
+// 처음 켰을 때의 색상 비트. 게임마다 제 것을 고릅니다.
+export const DEFAULT_MONITOR_COLORS = "256";
 
 
 //==============================================================================

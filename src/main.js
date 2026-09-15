@@ -16,7 +16,7 @@ import { buildPaletteRemap } from "./game/identity.js";
 import { installInputSourceListeners, readInputSource } from "./game/inputsource.js";
 import { drawInputIcon } from "./ui/inputicon.js";
 import { drawTestGrid } from "./ui/testgrid.js";
-import { attachCrt, applyCrtOptions, isCrtOverlayActive, mapWindowPointToGame, startScreenReveal, advanceScreenReveal, readRevealRatio, readDitherThreshold } from "./game/crt.js";
+import { attachCrt, applyCrtOptions, isCrtOverlayActive, mapWindowPointToGame, startScreenReveal, advanceScreenReveal, readRevealRatio, readDitherThreshold, readRevealMaskColorString } from "./game/crt.js";
 import { attachVirtualPad } from "./game/virtualpad.js";
 import { drawText, setFontOverrides } from "./game/text.js";
 import { CommandReader, Command } from "./game/command.js";
@@ -505,7 +505,7 @@ function drawRevealMask(graphic) {
 	const columnCount = System.Math.ceil(REFERENCE_RESOLUTION_WIDTH / REVEAL_CELL_SIZE);
 	const rowCount = System.Math.ceil(REFERENCE_RESOLUTION_HEIGHT / REVEAL_CELL_SIZE);
 	// 꺼진 앞머리는 바탕색, 그 뒤 안 드러난 칸은 흐린 색입니다. 검은 바탕에서도 마스크가 보입니다.
-	const maskColor = ratio < 0 ? getColor(Colors.background) : getColor(Colors.textFaint);
+	const maskColor = ratio < 0 ? getColor(Colors.background) : getColor(readRevealMaskColorString());
 	graphic.setFillColor(maskColor);
 	for (let rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
 		let runStart = -1;

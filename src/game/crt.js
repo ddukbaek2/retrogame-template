@@ -2,7 +2,8 @@
 // 포함 모듈 목록.
 //==============================================================================
 const System = globalThis;
-import { WINDOW_REFERENCE_WIDTH, WINDOW_REFERENCE_HEIGHT, MONITOR_BEZEL_X, MONITOR_BEZEL_Y } from "./constants.js";
+import { WINDOW_REFERENCE_WIDTH, WINDOW_REFERENCE_HEIGHT, MONITOR_BEZEL_X, MONITOR_BEZEL_Y, Colors } from "./constants.js";
+import { resolveColorString } from "./palette.js";
 import { readInputSource } from "./inputsource.js";
 import { readInputIconBitmap, readInputIconSize } from "../ui/inputicon.js";
 
@@ -55,6 +56,8 @@ uniform float uReveal;
 uniform sampler2D uIcon;
 uniform vec4 uIconRect;
 uniform vec3 uIconColor;
+uniform vec3 uRevealColor;
+uniform vec3 uRevealPaper;
 // 게임 화면 바깥의 바탕색. 게임의 종이가 검정이라 검게 두면 경계가 보이지 않습니다.
 const vec3 OUTSIDE_COLOR = vec3(0.149, 0.149, 0.169);
 
@@ -180,7 +183,7 @@ void main() {
 				// 마스크가 안 보이고 글자와 선만 점점이 잘려 깜빡이는 것처럼 보입니다.
 				// 앞머리(uReveal 이 0 보다 작을 때)는 화면이 꺼진 것이니 검정입니다.
 				// (사용자 지적, 2026-09-16, "페이드인연출말야 하얀색이 뭔가 보이는것같기도한데")
-				result = uReveal < 0.0 ? vec3(0.0, 0.0, 0.0) : vec3(0.14, 0.14, 0.13);
+				result = uReveal < 0.0 ? uRevealPaper : uRevealColor;
 			}
 		}
 	}
@@ -338,6 +341,8 @@ function ensureOverlay() {
 		icon: webGL.getUniformLocation(program, "uIcon"),
 		iconRect: webGL.getUniformLocation(program, "uIconRect"),
 		iconColor: webGL.getUniformLocation(program, "uIconColor"),
+		revealColor: webGL.getUniformLocation(program, "uRevealColor"),
+		revealPaper: webGL.getUniformLocation(program, "uRevealPaper"),
 		sourceCrop: webGL.getUniformLocation(program, "uSourceCrop"),
 		monitorRect: webGL.getUniformLocation(program, "uMonitorRect"),
 	};
@@ -463,6 +468,9 @@ function drawFrame() {
 			webGL.uniform3f(uniformLocations.iconColor, 0.42, 0.42, 0.44);
 		}
 		webGL.uniform1f(uniformLocations.reveal, readRevealRatio());
+		const revealColors = readRevealColors();
+		webGL.uniform3f(uniformLocations.revealColor, revealColors.mask[0], revealColors.mask[1], revealColors.mask[2]);
+		webGL.uniform3f(uniformLocations.revealPaper, revealColors.paper[0], revealColors.paper[1], revealColors.paper[2]);
 		webGL.uniform1i(uniformLocations.showFrame, isFrameShown ? 1 : 0);
 		webGL.uniform1i(uniformLocations.showCurve, curveScale > 0 ? 1 : 0);
 		webGL.uniform1f(uniformLocations.curvature, CURVATURE * curveScale);
@@ -654,6 +662,56 @@ export function readRevealRatio() {
 	const ratio = (elapsed - REVEAL_HOLD_RATIO) / (1 - REVEAL_HOLD_RATIO);
 	const stepped = System.Math.floor(ratio * REVEAL_STEPS) / REVEAL_STEPS;
 	return System.Math.min(1, stepped);
+}
+
+
+//==============================================================================
+// 차오르기의 색. (팔레트에서 뽑습니다. 색 수가 바뀌어도 어긋나지 않습니다)
+//
+// 안 드러난 칸은 흐린 먹 색입니다. 1 비트처럼 흐린 색이 바탕과 같아지면 먹 색을 씁니다.
+// 앞머리(꺼진 채)는 바탕색입니다. 회색을 박아 두면 녹색 단색에서 회색이 튀어나옵니다.
+// (사용자 지적, 2026-09-16, "페이드인연출 지금 초록색단색으로 보니 역시 문제있어. 회색이 나옴")
+//==============================================================================
+let revealColorCacheKey = "";
+let revealColorCache = { mask: [0, 0, 0], paper: [0, 0, 0] };
+
+/**
+ * @param { string } hexString "#rrggbb"
+ * @returns { number[] } 0 ~ 1 셋.
+ */
+function parseHexColor(hexString) {
+	const text = hexString.charAt(0) === "#" ? hexString.slice(1) : hexString;
+	if (text.length < 6) {
+		return [0, 0, 0];
+	}
+	return [
+		System.parseInt(text.slice(0, 2), 16) / 255,
+		System.parseInt(text.slice(2, 4), 16) / 255,
+		System.parseInt(text.slice(4, 6), 16) / 255,
+	];
+}
+
+/**
+ * @returns { string } 마스크에 쓸 색 문자열. (팔레트를 거친 실제 색)
+ */
+export function readRevealMaskColorString() {
+	const paper = resolveColorString(Colors.background);
+	const faint = resolveColorString(Colors.textFaint);
+	return faint === paper ? resolveColorString(Colors.textPrimary) : faint;
+}
+
+/**
+ * @returns { object } { mask, paper } 각각 0 ~ 1 셋.
+ */
+function readRevealColors() {
+	const paper = resolveColorString(Colors.background);
+	const mask = readRevealMaskColorString();
+	const cacheKey = paper + "/" + mask;
+	if (cacheKey !== revealColorCacheKey) {
+		revealColorCacheKey = cacheKey;
+		revealColorCache = { mask: parseHexColor(mask), paper: parseHexColor(paper) };
+	}
+	return revealColorCache;
 }
 
 
