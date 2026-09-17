@@ -158,6 +158,72 @@ export function drawSprite(graphic, spriteId, centerX, centerY, size, colorKeys,
 
 
 //==============================================================================
+// 낱개 한 칸의 픽셀 크기. (세로 한 조각씩 찍는 쪽이 원본 줄을 셀 때 씁니다)
+//==============================================================================
+/**
+ * @returns { number }
+ */
+export function readSpriteCellSize() {
+	return cellSize;
+}
+
+
+//==============================================================================
+// 낱개의 세로 한 조각 찍기. (세상에 고정된 면에 그림을 붙일 때, 기둥마다 높이가 다릅니다)
+//
+// 원본의 가로 sourceLeftRatio 부터 sourceWidthRatio 만큼을 잘라 dest 사각형에 늘려 찍습니다.
+// 세로는 clipRect 로 자르고, 잘린 만큼 원본에서도 같은 비율로 잘라 냅니다.
+//==============================================================================
+/**
+ * @param { object } graphic
+ * @param { string } spriteId
+ * @param { number } sourceLeftRatio 원본 가로의 시작. (0 ~ 1)
+ * @param { number } sourceWidthRatio 원본 가로의 너비. (0 ~ 1)
+ * @param { number } destinationLeft
+ * @param { number } destinationTop
+ * @param { number } destinationWidth
+ * @param { number } destinationHeight
+ * @param { string[] } colorKeys 밝기 단마다의 Colors 열쇠. (어두운 단부터)
+ * @param { object } clipRect { left, top, right, bottom }
+ */
+export function drawSpriteSlice(graphic, spriteId, sourceLeftRatio, sourceWidthRatio, destinationLeft, destinationTop, destinationWidth, destinationHeight, colorKeys, clipRect) {
+	if (!isSheetLoaded || destinationHeight <= 0 || destinationWidth <= 0) {
+		return;
+	}
+	const spriteIndex = findSpriteIndex(spriteId);
+	if (spriteIndex < 0) {
+		return;
+	}
+	const image = sheetAsset.getImage();
+	const destinationRight = destinationLeft + destinationWidth;
+	const destinationBottom = destinationTop + destinationHeight;
+	const clippedLeft = System.Math.max(destinationLeft, clipRect.left);
+	const clippedTop = System.Math.max(destinationTop, clipRect.top);
+	const clippedRight = System.Math.min(destinationRight, clipRect.right);
+	const clippedBottom = System.Math.min(destinationBottom, clipRect.bottom);
+	if (clippedRight <= clippedLeft || clippedBottom <= clippedTop) {
+		return;
+	}
+	const topRatio = (clippedTop - destinationTop) / destinationHeight;
+	const heightRatio = (clippedBottom - clippedTop) / destinationHeight;
+	const wasSmoothing = graphic.isImageSmoothingEnabled();
+	graphic.setImageSmoothingEnabled(false);
+	for (let levelIndex = 0; levelIndex < levelCount; ++levelIndex) {
+		const tintColor = getColor(colorKeys[levelIndex]);
+		graphic.setImageTintColor(tintColor);
+		const sourceLeft = spriteIndex * cellSize + sourceLeftRatio * cellSize;
+		const sourceTop = levelIndex * cellSize + topRatio * cellSize;
+		graphic.drawImageWithSourceAndDestination(image,
+			sourceLeft, sourceTop, System.Math.max(1, sourceWidthRatio * cellSize), heightRatio * cellSize,
+			System.Math.round(clippedLeft), System.Math.round(clippedTop),
+			System.Math.round(clippedRight - clippedLeft), System.Math.round(clippedBottom - clippedTop));
+	}
+	graphic.setImageTintColor(null);
+	graphic.setImageSmoothingEnabled(wasSmoothing);
+}
+
+
+//==============================================================================
 // 마스크 한 장짜리 그림. (제목 로고처럼 단색으로 찍는 것)
 //
 // 낱개 시트와 달리 밝기 단이 없습니다. 알파만 있는 그림 한 장을 받아 `Colors` 의 열쇠 하나로
