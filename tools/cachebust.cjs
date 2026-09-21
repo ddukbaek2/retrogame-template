@@ -99,7 +99,7 @@ function bustBundledAssets() {
 		const bundlePath = path.join(bundleDirectory, entryName);
 		let bundleText = fs.readFileSync(bundlePath, "utf8");
 		let assetCount = 0;
-		bundleText = bundleText.replace(/(["'`])(\.\/assets\/[^"'`?#]+)/g, (matched, quote, relativePath) => {
+		bundleText = bundleText.replace(/(["'`])(\.\/assets\/[^"'`?#]+)\1/g, (matched, quote, relativePath) => {
 			const extensionName = path.extname(relativePath).toLowerCase();
 			if (BUNDLED_ASSET_EXTENSIONS.indexOf(extensionName) < 0) {
 				return matched;
