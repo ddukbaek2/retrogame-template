@@ -22,8 +22,11 @@ const targetDirectory = process.argv[2]
 	? path.resolve(process.argv[2])
 	: path.join(projectRoot, "build", "web");
 
-// 지문을 붙일 확장자. 그림과 소리는 이름이 바뀔 일이 거의 없어 두지 않습니다.
+// index.html 에서 지문을 붙일 확장자.
 const BUSTED_EXTENSIONS = [".js", ".css"];
+// 번들 안의 글자로 부르는 자산에서 지문을 붙일 확장자. 스프라이트 시트처럼 코드는 그대로인데 내용만
+// 바뀌는 것이 있습니다. 붙이지 않으면 배포해도 브라우저가 예전 그림을 계속 씁니다.
+const BUNDLED_ASSET_EXTENSIONS = [".png", ".json", ".wav", ".ogg", ".mp3", ".ttf", ".woff2"];
 // 지문 길이. 8 자면 충돌을 걱정할 일이 없습니다.
 const FINGERPRINT_LENGTH = 8;
 
@@ -49,6 +52,9 @@ function main() {
 		return;
 	}
 
+	// 번들 안의 자산 경로부터 손봅니다. 그래야 번들의 지문에 그 바뀜이 담깁니다.
+	bustBundledAssets();
+
 	let indexText = fs.readFileSync(indexPath, "utf8");
 	let bustedCount = 0;
 
@@ -72,6 +78,42 @@ function main() {
 	console.log("캐시 무효화: " + bustedCount + "개");
 
 	writeVersionFile();
+}
+
+
+//==============================================================================
+// 번들 안의 자산 경로에 지문을 붙입니다.
+//
+// 번들의 "./assets/…" 글자를 훑어 그 파일이 있으면 뒤에 ?v=지문을 붙입니다. 경로를 조각으로
+// 이어 붙이는 자리는 잡히지 않으므로 그대로 둡니다.
+//==============================================================================
+function bustBundledAssets() {
+	const bundleDirectory = path.join(targetDirectory, "js");
+	if (!fs.existsSync(bundleDirectory)) {
+		return;
+	}
+	for (const entryName of fs.readdirSync(bundleDirectory)) {
+		if (path.extname(entryName).toLowerCase() !== ".js") {
+			continue;
+		}
+		const bundlePath = path.join(bundleDirectory, entryName);
+		let bundleText = fs.readFileSync(bundlePath, "utf8");
+		let assetCount = 0;
+		bundleText = bundleText.replace(/(["'`])(\.\/assets\/[^"'`?#]+)/g, (matched, quote, relativePath) => {
+			const extensionName = path.extname(relativePath).toLowerCase();
+			if (BUNDLED_ASSET_EXTENSIONS.indexOf(extensionName) < 0) {
+				return matched;
+			}
+			const assetPath = path.join(targetDirectory, relativePath.slice(2));
+			if (!fs.existsSync(assetPath)) {
+				return matched;
+			}
+			assetCount += 1;
+			return quote + relativePath + "?v=" + readFingerprint(assetPath) + quote;
+		});
+		fs.writeFileSync(bundlePath, bundleText, "utf8");
+		console.log("번들 안의 자산 지문: " + entryName + " " + assetCount + "개");
+	}
 }
 
 
