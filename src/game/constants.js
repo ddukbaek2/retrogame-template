@@ -125,6 +125,8 @@ export const MonitorColorOptions = System.Object.freeze([
 ]);
 // 처음 켰을 때의 색상 비트. 게임마다 제 것을 고릅니다.
 export const DEFAULT_MONITOR_COLORS = "256";
+// 처음 켰을 때의 볼록 효과. 게임마다 제 값을 둡니다.
+export const DEFAULT_CURVE_LEVEL = "high";
 
 
 //==============================================================================
