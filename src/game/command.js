@@ -88,6 +88,7 @@ export class CommandReader {
 	/** @private @type { object } */ #heldSince;
 	/** @private @type { object } */ #repeatTimers;
 	/** @private @type { object } */ #padHeld;
+	/** @private @type { object } */ #virtualPadHeld;
 	/** @private @type { Function } */ #gestureHandler;
 	/** @private @type { boolean } */ #hasGesture;
 	/** @private @type { object } */ #touch;
@@ -106,6 +107,7 @@ export class CommandReader {
 		this.#heldSince = {};
 		this.#repeatTimers = {};
 		this.#padHeld = {};
+		this.#virtualPadHeld = {};
 		this.#gestureHandler = null;
 		this.#hasGesture = false;
 		this.#touch = { isDown: false, startX: 0, startY: 0, startTime: 0, direction: null, maximumCount: 0 };
@@ -331,16 +333,19 @@ export class CommandReader {
 	}
 
 	//==============================================================================
-	// 패드로 누르고 있는 상태 정하기. (실제 게임패드와 가상 패드가 함께 씁니다)
+	// 가상 패드로 누르고 있는 상태 정하기. (src/game/virtualpad.js 가 부릅니다)
 	//
 	// 방향을 누르고 있는 동안 반복이 돌아야 하므로 눌린 상태를 따로 들고 있습니다.
+	// 실제 게임패드의 상태(#padHeld)와 나눠 둡니다. 함께 쓰면 게임패드 폴링이 매 프레임 그 값을
+	// 실제 패드로 덮어써, 가상 패드의 방향이 한 프레임 만에 떼어진 것이 됩니다.
+	// (누르고 있는 상태를 읽는 실시간 게임에서 가상 패드로 걷지 못했습니다)
 	//==============================================================================
 	/**
 	 * @param { string } command
 	 * @param { boolean } isDown
 	 */
 	setPadHeld(command, isDown) {
-		this.#padHeld[command] = isDown;
+		this.#virtualPadHeld[command] = isDown;
 	}
 
 	//==============================================================================
@@ -378,7 +383,7 @@ export class CommandReader {
 					return;
 				}
 			}
-			if (this.#padHeld[command]) {
+			if (this.#padHeld[command] || this.#virtualPadHeld[command]) {
 				return;
 			}
 			this.#heldSince[command] = false;
@@ -396,7 +401,7 @@ export class CommandReader {
 		if (this.#heldSince[command] === true) {
 			return true;
 		}
-		if (this.#padHeld[command] === true) {
+		if (this.#padHeld[command] === true || this.#virtualPadHeld[command] === true) {
 			return true;
 		}
 		for (const pressedCode of this.#pressedKeyCommands) {
@@ -417,6 +422,7 @@ export class CommandReader {
 			this.#heldSince[command] = false;
 		}
 		this.#padHeld = {};
+		this.#virtualPadHeld = {};
 	}
 
 	//==============================================================================
