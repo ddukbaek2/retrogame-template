@@ -237,6 +237,10 @@ let screenRectCss = { x: 0, y: 0, width: 1, height: 1 };
 let monitorPlacement = null;
 let sourceCrop = { x: 0, y: 0, width: 1, height: 1 };
 let isTextureAllocated = false;
+// 텍스처를 만든 때의 원본 캔버스 크기. 와이드에서 창 비율이 바뀌면 원본 폭이 달라져 다시 만들어야 합니다.
+// (덮어쓰기만 하면 넓어질 때는 쓰기가 실패해 그림이 멈추고, 좁아질 때는 오른쪽에 지난 그림이 남았습니다)
+let textureWidth = 0;
+let textureHeight = 0;
 let bezelTexture = null;
 let isBezelLoaded = false;
 // 모니터 그림을 보일지, 볼록 효과를 보일지. (설정 둘, 색 수는 표시 장치가 따로 맡습니다)
@@ -442,12 +446,15 @@ function drawFrame() {
 		webGL.activeTexture(webGL.TEXTURE0);
 		webGL.bindTexture(webGL.TEXTURE_2D, texture);
 		webGL.pixelStorei(webGL.UNPACK_FLIP_Y_WEBGL, true);
-		if (isTextureAllocated) {
+		const isSameSize = sourceCanvas.width === textureWidth && sourceCanvas.height === textureHeight;
+		if (isTextureAllocated && isSameSize) {
 			webGL.texSubImage2D(webGL.TEXTURE_2D, 0, 0, 0, webGL.RGBA, webGL.UNSIGNED_BYTE, sourceCanvas);
 		}
 		else {
 			webGL.texImage2D(webGL.TEXTURE_2D, 0, webGL.RGBA, webGL.RGBA, webGL.UNSIGNED_BYTE, sourceCanvas);
 			isTextureAllocated = true;
+			textureWidth = sourceCanvas.width;
+			textureHeight = sourceCanvas.height;
 		}
 		webGL.viewport(0, 0, overlayCanvas.width, overlayCanvas.height);
 		webGL.uniform2f(uniformLocations.outputSize, overlayCanvas.width, overlayCanvas.height);
