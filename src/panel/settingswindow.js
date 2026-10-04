@@ -8,7 +8,8 @@ import { placeNode, moveNode } from "../ui/layout.js";
 import { drawText } from "../game/text.js";
 import { Command } from "../game/command.js";
 import { beepMove, beepConfirm, beepCancel, beepBlocked } from "../game/beep.js";
-import { Colors, UiFontSize, REFERENCE_RESOLUTION_WIDTH } from "../game/constants.js";
+import { Colors, UiFontSize } from "../game/constants.js";
+import { readScreenWidth } from "../game/screensize.js";
 import { createFrameSettingItems, applyGameLabels, handleFrameSettingItem } from "./settingitems.js";
 
 
@@ -52,7 +53,8 @@ export class SettingsWindow extends ScreenNode {
 		this.#list = new ListNode();
 		this.#list.setName("settings:list");
 		this.#list.setTier(UiFontSize.medium);
-		placeNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5), LIST_TOP_Y, LIST_WIDTH, 0);
+		const screenWidth = readScreenWidth();
+		placeNode(this.#list, System.Math.round((screenWidth - LIST_WIDTH) * 0.5), LIST_TOP_Y, LIST_WIDTH, 0);
 		this.#list.setSelectHandler((itemId) => {
 			this.handleItem(itemId, 1);
 		});
@@ -95,7 +97,8 @@ export class SettingsWindow extends ScreenNode {
 		this.#list.setVisibleRowCount(LIST_VISIBLE_ROWS);
 		this.#list.setItems(frameItems.concat(gameItems, [closeItem]));
 		this.#list.setSelectedIndex(selectedIndex);
-		placeNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5), LIST_TOP_Y, LIST_WIDTH, this.#list.readTotalHeight());
+		const screenWidth = readScreenWidth();
+		placeNode(this.#list, System.Math.round((screenWidth - LIST_WIDTH) * 0.5), LIST_TOP_Y, LIST_WIDTH, this.#list.readTotalHeight());
 	}
 
 	//==============================================================================
@@ -173,8 +176,9 @@ export class SettingsWindow extends ScreenNode {
 		const offset = this.readEnterOffset();
 		const gameModule = this.getScene().getGameModule();
 		const titleText = gameModule === null ? "설정" : gameModule.readSettingText("title", "설정");
-		drawText(graphic, titleText, REFERENCE_RESOLUTION_WIDTH * 0.5 + offset, TITLE_CENTER_Y, UiFontSize.huge, Colors.textPrimary, "center");
-		moveNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5) + offset, LIST_TOP_Y);
+		const screenWidth = readScreenWidth();
+		drawText(graphic, titleText, screenWidth * 0.5 + offset, TITLE_CENTER_Y, UiFontSize.huge, Colors.textPrimary, "center");
+		moveNode(this.#list, System.Math.round((screenWidth - LIST_WIDTH) * 0.5) + offset, LIST_TOP_Y);
 		const hintText = gameModule === null ? HINT_TEXT : gameModule.readSettingText("hint", HINT_TEXT);
 		this.drawHint(graphic, hintText);
 		super.draw(graphic);

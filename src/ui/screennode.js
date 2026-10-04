@@ -6,7 +6,8 @@ import { WorldNode } from "../../libs/vanilla.js/src/core/node/worldnode.js";
 import { placeNode } from "./layout.js";
 import { drawText } from "../game/text.js";
 import { easeOutCubic } from "../game/easing.js";
-import { Colors, UiFontSize, REFERENCE_RESOLUTION_WIDTH, REFERENCE_RESOLUTION_HEIGHT, ENTER_SHIFT, ENTER_SECONDS, HEADER_CENTER_Y, HEADER_SIDE_MARGIN, HINT_CENTER_Y } from "../game/constants.js";
+import { Colors, UiFontSize, REFERENCE_RESOLUTION_HEIGHT, ENTER_SHIFT, ENTER_SECONDS, HEADER_CENTER_Y, HEADER_SIDE_MARGIN, HINT_CENTER_Y } from "../game/constants.js";
+import { readScreenWidth } from "../game/screensize.js";
 
 
 //==============================================================================
@@ -36,7 +37,8 @@ export class ScreenNode extends WorldNode {
 	constructor(scene, name) {
 		super();
 		this.setName(name);
-		placeNode(this, 0, 0, REFERENCE_RESOLUTION_WIDTH, REFERENCE_RESOLUTION_HEIGHT);
+		const screenWidth = readScreenWidth();
+		placeNode(this, 0, 0, screenWidth, REFERENCE_RESOLUTION_HEIGHT);
 		this.#scene = scene;
 		this.#enterTimer = ENTER_SECONDS;
 	}
@@ -157,7 +159,8 @@ export class ScreenNode extends WorldNode {
 			drawText(graphic, leftText, HEADER_SIDE_MARGIN + offset, HEADER_CENTER_Y, UiFontSize.small, Colors.textDim, "left");
 		}
 		if (rightText !== "") {
-			drawText(graphic, rightText, REFERENCE_RESOLUTION_WIDTH - HEADER_SIDE_MARGIN + offset, HEADER_CENTER_Y, UiFontSize.small, Colors.textDim, "right");
+			const screenWidth = readScreenWidth();
+			drawText(graphic, rightText, screenWidth - HEADER_SIDE_MARGIN + offset, HEADER_CENTER_Y, UiFontSize.small, Colors.textDim, "right");
 		}
 	}
 }

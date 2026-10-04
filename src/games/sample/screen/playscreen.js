@@ -6,7 +6,8 @@ import { ScreenNode } from "../../../ui/screennode.js";
 import { drawText } from "../../../game/text.js";
 import { Command } from "../../../game/command.js";
 import { beepConfirm, beepCancel } from "../../../game/beep.js";
-import { Colors, UiFontSize, REFERENCE_RESOLUTION_WIDTH } from "../../../game/constants.js";
+import { Colors, UiFontSize } from "../../../game/constants.js";
+import { readScreenWidth } from "../../../game/screensize.js";
 import { drawBox } from "../../../ui/box.js";
 
 
@@ -93,7 +94,8 @@ export class PlayScreen extends ScreenNode {
 		const game = this.getScene();
 		// 화면이 들어올 때 옆에서 밀려 들어옵니다. 그 몫을 모든 자리에 더합니다.
 		const offset = this.readEnterOffset();
-		const centerX = REFERENCE_RESOLUTION_WIDTH * 0.5 + offset;
+		const screenWidth = readScreenWidth();
+		const centerX = screenWidth * 0.5 + offset;
 		drawText(graphic, game.getName(), centerX, TITLE_CENTER_Y, UiFontSize.title, Colors.textPrimary, "center");
 		drawBox(graphic, BOX_LEFT_X + offset, BOX_TOP_Y, BOX_WIDTH, BOX_HEIGHT, Colors.textFaint);
 		drawText(graphic, String(game.getCount()), centerX, COUNT_CENTER_Y, UiFontSize.title, Colors.accent, "center");

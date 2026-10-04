@@ -499,6 +499,21 @@ export function attachCrt(gameCanvas, backbufferWidth, backbufferHeight) {
 
 
 //==============================================================================
+// 게임 백버퍼 크기 바꾸기. (화면 크기를 와이드로 고르면 폭이 창 비율을 따라 바뀝니다)
+//
+// 바꾼 뒤에는 syncCrtCanvas 로 화면 자리를 다시 잽니다. (src/game/devicesize.js 가 차례대로 부릅니다)
+//==============================================================================
+/**
+ * @param { number } backbufferWidth
+ * @param { number } backbufferHeight
+ */
+export function setCrtSourceSize(backbufferWidth, backbufferHeight) {
+	sourceWidth = backbufferWidth;
+	sourceHeight = backbufferHeight;
+}
+
+
+//==============================================================================
 // 덮개 캔버스의 자리, 크기를 게임 캔버스에 맞춤. (화면 모드가 바뀔 때마다)
 //==============================================================================
 export function syncCrtCanvas() {

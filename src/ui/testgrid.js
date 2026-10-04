@@ -4,7 +4,8 @@
 const System = globalThis;
 import { getColor } from "../game/palette.js";
 import { readRect } from "../game/scratch.js";
-import { Colors, REFERENCE_RESOLUTION_WIDTH, REFERENCE_RESOLUTION_HEIGHT } from "../game/constants.js";
+import { Colors, REFERENCE_RESOLUTION_HEIGHT } from "../game/constants.js";
+import { readScreenWidth } from "../game/screensize.js";
 
 
 //==============================================================================
@@ -30,7 +31,8 @@ const BORDER_SIZE = 4;
  * @param { object } graphic
  */
 export function drawTestGrid(graphic) {
-	const columnCount = System.Math.ceil(REFERENCE_RESOLUTION_WIDTH / CELL_SIZE);
+	const screenWidth = readScreenWidth();
+	const columnCount = System.Math.ceil(screenWidth / CELL_SIZE);
 	const rowCount = System.Math.ceil(REFERENCE_RESOLUTION_HEIGHT / CELL_SIZE);
 	const darkColor = getColor(Colors.background);
 	const lightColor = getColor(Colors.textPrimary);
@@ -46,11 +48,11 @@ export function drawTestGrid(graphic) {
 	const accentColor = getColor(Colors.accent);
 	graphic.setStrokeColor(accentColor);
 	const borderRect = readRect(BORDER_SIZE * 0.5, BORDER_SIZE * 0.5,
-		REFERENCE_RESOLUTION_WIDTH - BORDER_SIZE, REFERENCE_RESOLUTION_HEIGHT - BORDER_SIZE);
+		screenWidth - BORDER_SIZE, REFERENCE_RESOLUTION_HEIGHT - BORDER_SIZE);
 	graphic.drawStrokeRect(borderRect, BORDER_SIZE);
 	const centerColor = getColor(Colors.red);
 	graphic.setStrokeColor(centerColor);
-	const middleX = REFERENCE_RESOLUTION_WIDTH * 0.5;
+	const middleX = screenWidth * 0.5;
 	const middleY = REFERENCE_RESOLUTION_HEIGHT * 0.5;
 	const crossRect = readRect(middleX - CELL_SIZE, middleY - CELL_SIZE, CELL_SIZE * 2, CELL_SIZE * 2);
 	graphic.drawStrokeRect(crossRect, BORDER_SIZE);

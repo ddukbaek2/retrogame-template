@@ -2,7 +2,7 @@
 // 포함 모듈 목록.
 //==============================================================================
 const System = globalThis;
-import { GAME_STORAGE_PREFIX, SETTINGS_STORAGE_KEY, DEFAULT_MONITOR_COLORS, DEFAULT_CURVE_LEVEL } from "./constants.js";
+import { GAME_STORAGE_PREFIX, SETTINGS_STORAGE_KEY, DEFAULT_MONITOR_COLORS, DEFAULT_CURVE_LEVEL, DEFAULT_DISPLAY_MODE } from "./constants.js";
 
 
 //==============================================================================
@@ -118,7 +118,7 @@ export function clearAllGameData() {
  * @returns { object } { isSoundEnabled, isMusicEnabled, displayMode, isMonitorFrameEnabled, curveLevel, monitorColors }
  */
 export function createDefaultSettings() {
-	return { isSoundEnabled: true, isMusicEnabled: true, displayMode: "integer", isMonitorFrameEnabled: true, curveLevel: DEFAULT_CURVE_LEVEL, monitorColors: DEFAULT_MONITOR_COLORS };
+	return { isSoundEnabled: true, isMusicEnabled: true, displayMode: DEFAULT_DISPLAY_MODE, isMonitorFrameEnabled: true, curveLevel: DEFAULT_CURVE_LEVEL, monitorColors: DEFAULT_MONITOR_COLORS };
 }
 
 

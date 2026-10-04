@@ -9,6 +9,8 @@ import { Scene } from "../libs/vanilla.js/src/core/scene.js";
 import { FontAsset } from "../libs/vanilla.js/src/resource/fontasset.js";
 import { applyPixelFixedScale } from "./game/viewscale.js";
 import { initializeDisplayModes, selectDisplayMode, refreshDisplayPlacement } from "./game/devicesize.js";
+import { readScreenWidth } from "./game/screensize.js";
+import { isMonitorFrameShown } from "./panel/settingitems.js";
 import { getColor, setPaletteRemap, resolveRemapColorString } from "./game/palette.js";
 import { setDisplayColorMode, setDisplayPaperColor } from "./game/display.js";
 import { CurveLevelOptions, MonitorColorOptions } from "./game/constants.js";
@@ -195,7 +197,8 @@ class GameScene extends Scene {
 		const viewManager = engine.getViewManager();
 		this.drawOutsideAndView(graphic, viewManager);
 		if (this.#loadedRatio >= 0.3) {
-			drawText(graphic, "불러오는 중", REFERENCE_RESOLUTION_WIDTH * 0.5, REFERENCE_RESOLUTION_HEIGHT * 0.5, UiFontSize.small, Colors.textDim, "center");
+			const screenWidth = readScreenWidth();
+			drawText(graphic, "불러오는 중", screenWidth * 0.5, REFERENCE_RESOLUTION_HEIGHT * 0.5, UiFontSize.small, Colors.textDim, "center");
 		}
 	}
 
@@ -365,7 +368,8 @@ class GameScene extends Scene {
 		setMusicEnabled(this.#settings.isMusicEnabled !== false);
 		setDisplayColorMode(this.#settings.monitorColors === undefined ? "256" : this.#settings.monitorColors);
 		// 볼록 효과는 모니터 안에서만 뜻이 있습니다. 프레임을 끄면 같이 꺼집니다. (사용자 지시, 2026-09-10)
-		const isFrameShown = this.#settings.isMonitorFrameEnabled !== false;
+		// 와이드에서는 모니터 프레임을 쓸 수 없습니다. (모니터 그림의 화면 구멍이 4 : 3 입니다)
+		const isFrameShown = isMonitorFrameShown(this.#settings);
 		const curveScale = isFrameShown ? readCurveScale(this.#settings.curveLevel) : 0;
 		applyCrtOptions(isFrameShown, curveScale);
 		// 프레임을 켜고 끈 뒤에 캔버스 크기를 다시 잡습니다. (덮개가 보여 주면 기준 크기 그대로 둡니다)
@@ -502,7 +506,8 @@ function drawRevealMask(graphic) {
 	if (ratio >= 1) {
 		return;
 	}
-	const columnCount = System.Math.ceil(REFERENCE_RESOLUTION_WIDTH / REVEAL_CELL_SIZE);
+	const screenWidth = readScreenWidth();
+	const columnCount = System.Math.ceil(screenWidth / REVEAL_CELL_SIZE);
 	const rowCount = System.Math.ceil(REFERENCE_RESOLUTION_HEIGHT / REVEAL_CELL_SIZE);
 	// 꺼진 앞머리는 바탕색, 그 뒤 안 드러난 칸은 흐린 색입니다. 검은 바탕에서도 마스크가 보입니다.
 	const maskColor = ratio < 0 ? getColor(Colors.background) : getColor(readRevealMaskColorString());
@@ -564,6 +569,6 @@ const gameCanvas = engine.getViewManager().getCanvas();
 attachCrt(gameCanvas, REFERENCE_RESOLUTION_WIDTH, REFERENCE_RESOLUTION_HEIGHT);
 setDisplayPaperColor(Colors.background);
 setDisplayColorMode(startupSettings.monitorColors === undefined ? "256" : startupSettings.monitorColors);
-const isStartupFrameShown = startupSettings.isMonitorFrameEnabled !== false;
+const isStartupFrameShown = isMonitorFrameShown(startupSettings);
 applyCrtOptions(isStartupFrameShown, isStartupFrameShown ? readCurveScale(startupSettings.curveLevel) : 0);
 initializeDisplayModes(engine, startupSettings.displayMode);

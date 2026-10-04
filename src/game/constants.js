@@ -127,6 +127,8 @@ export const MonitorColorOptions = System.Object.freeze([
 export const DEFAULT_MONITOR_COLORS = "256";
 // 처음 켰을 때의 볼록 효과. 게임마다 제 값을 둡니다.
 export const DEFAULT_CURVE_LEVEL = "high";
+// 처음 켰을 때의 화면 크기. (DisplayModeOptions 의 id) 게임마다 제 값을 둡니다.
+export const DEFAULT_DISPLAY_MODE = "integer";
 
 
 //==============================================================================
@@ -207,7 +209,13 @@ export const GAME_STORAGE_PREFIX = "nographic:game:";
 export const SETTINGS_STORAGE_KEY = "nographic:settings";
 
 // 화면 모드 선택지.
+// 와이드는 4 : 3 을 벗어나 창 비율대로 그리는 폭을 넓힙니다. 스팀덱(16 : 10)에서 좌우 검은 띠가 생기지 않습니다.
+// 모니터 그림의 화면 구멍이 4 : 3 이라 와이드에서는 모니터 프레임을 쓸 수 없습니다.
+// (사용자 지시, 2026-10-04, "스팀덱화면해상도에서 좌우에 레터박스가 생긴단말이지... 그걸 방지하는 4:3을 벗어나는 모드")
 export const DisplayModeOptions = System.Object.freeze([
 	{ id: "fit", name: "창 맞춤" },
 	{ id: "integer", name: "정수 배율" },
+	{ id: "wide", name: "와이드" },
 ]);
+// 와이드에서 넓어질 수 있는 가장 큰 비율. 이보다 넓은 창은 좌우에 띠가 남습니다. (16 : 9 면 1280 × 720)
+export const WIDE_MAXIMUM_ASPECT = 16 / 9;

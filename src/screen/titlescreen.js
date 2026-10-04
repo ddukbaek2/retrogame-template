@@ -9,7 +9,8 @@ import { drawText } from "../game/text.js";
 import { Command } from "../game/command.js";
 import { beepMove, beepConfirm } from "../game/beep.js";
 import { readUiElapsedSeconds } from "../ui/uitime.js";
-import { Colors, UiFontSize, GAME_TITLE, REFERENCE_RESOLUTION_WIDTH } from "../game/constants.js";
+import { Colors, UiFontSize, GAME_TITLE } from "../game/constants.js";
+import { readScreenWidth } from "../game/screensize.js";
 import { isMaskImageLoaded, drawMaskImage } from "../game/sprite.js";
 
 
@@ -56,7 +57,8 @@ export class TitleScreen extends ScreenNode {
 			{ id: "start", label: "시작" },
 			{ id: "settings", label: "설정" },
 		]);
-		placeNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5), LIST_TOP_Y, LIST_WIDTH, this.#list.readTotalHeight());
+		const screenWidth = readScreenWidth();
+		placeNode(this.#list, System.Math.round((screenWidth - LIST_WIDTH) * 0.5), LIST_TOP_Y, LIST_WIDTH, this.#list.readTotalHeight());
 		this.#list.setSelectHandler((itemId) => {
 			if (itemId === "start") {
 				scene.enterGame();
@@ -112,15 +114,16 @@ export class TitleScreen extends ScreenNode {
 		}
 		const offset = this.readEnterOffset();
 		const breath = System.Math.round(System.Math.sin(readUiElapsedSeconds() * System.Math.PI * 2 / BREATH_PERIOD) * BREATH_HEIGHT);
+		const screenWidth = readScreenWidth();
 		// 게임이 제목 그림을 냈으면 그것을 세웁니다. 없으면 이름을 글자로 씁니다.
 		if (isMaskImageLoaded(TITLE_IMAGE_NAME)) {
-			drawMaskImage(graphic, TITLE_IMAGE_NAME, REFERENCE_RESOLUTION_WIDTH * 0.5 + offset,
+			drawMaskImage(graphic, TITLE_IMAGE_NAME, screenWidth * 0.5 + offset,
 				TITLE_CENTER_Y + breath, TITLE_IMAGE_HEIGHT, Colors.textPrimary);
 		}
 		else {
-			drawText(graphic, GAME_TITLE, REFERENCE_RESOLUTION_WIDTH * 0.5 + offset, TITLE_CENTER_Y + breath, UiFontSize.title, Colors.textPrimary, "center");
+			drawText(graphic, GAME_TITLE, screenWidth * 0.5 + offset, TITLE_CENTER_Y + breath, UiFontSize.title, Colors.textPrimary, "center");
 		}
-		moveNode(this.#list, System.Math.round((REFERENCE_RESOLUTION_WIDTH - LIST_WIDTH) * 0.5) + offset, LIST_TOP_Y);
+		moveNode(this.#list, System.Math.round((screenWidth - LIST_WIDTH) * 0.5) + offset, LIST_TOP_Y);
 		this.drawHint(graphic, HINT_TEXT);
 		super.draw(graphic);
 	}

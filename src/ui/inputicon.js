@@ -5,7 +5,8 @@ const System = globalThis;
 import { getColor } from "../game/palette.js";
 import { readRect } from "../game/scratch.js";
 import { InputSource } from "../game/inputsource.js";
-import { Colors, REFERENCE_RESOLUTION_WIDTH, HEADER_SIDE_MARGIN, HINT_CENTER_Y } from "../game/constants.js";
+import { Colors, HEADER_SIDE_MARGIN, HINT_CENTER_Y } from "../game/constants.js";
+import { readScreenWidth } from "../game/screensize.js";
 
 
 //==============================================================================
@@ -94,7 +95,8 @@ export function readInputIconSize() {
 export function readInputIconPosition() {
 	const width = ICON_COLUMNS * DOT_SIZE;
 	const height = ICON_ROWS * DOT_SIZE;
-	const x = REFERENCE_RESOLUTION_WIDTH - HEADER_SIDE_MARGIN - width;
+	const screenWidth = readScreenWidth();
+	const x = screenWidth - HEADER_SIDE_MARGIN - width;
 	const y = HINT_CENTER_Y - System.Math.round(height * 0.5);
 	return { x: x, y: y };
 }

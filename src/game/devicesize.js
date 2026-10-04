@@ -2,10 +2,12 @@
 // 포함 모듈 목록.
 //==============================================================================
 const System = globalThis;
+import { Vector2 } from "../../libs/vanilla.js/src/base/vector2.js";
 import { applyPixelFixedScale } from "./viewscale.js";
-import { syncCrtCanvas, isCrtOverlayActive, setCrtMonitorPlacement } from "./crt.js";
+import { syncCrtCanvas, isCrtOverlayActive, setCrtMonitorPlacement, setCrtSourceSize } from "./crt.js";
 import { readVirtualPadReserve, setVirtualPadPlacement } from "./virtualpad.js";
-import { REFERENCE_RESOLUTION_WIDTH, REFERENCE_RESOLUTION_HEIGHT, WINDOW_REFERENCE_WIDTH, WINDOW_REFERENCE_HEIGHT } from "./constants.js";
+import { readScreenWidth, setScreenWidth } from "./screensize.js";
+import { REFERENCE_RESOLUTION_WIDTH, REFERENCE_RESOLUTION_HEIGHT, WINDOW_REFERENCE_WIDTH, WINDOW_REFERENCE_HEIGHT, WIDE_MAXIMUM_ASPECT } from "./constants.js";
 
 
 //==============================================================================
@@ -15,14 +17,17 @@ import { REFERENCE_RESOLUTION_WIDTH, REFERENCE_RESOLUTION_HEIGHT, WINDOW_REFEREN
 //
 //   창 맞춤  , 비율을 지킨 채 창을 꽉 채웁니다. 배율이 정수가 아니면 도트 크기가 조금 고르지 않습니다. (기본)
 //   정수 배율, 1 배, 2 배, 3 배처럼 정수 배율만 씁니다. 도트가 완벽하게 고릅니다. 대신 여백이 남습니다.
+//   와이드  , 4 : 3 을 벗어납니다. 그리는 폭을 창 비율대로 넓혀(세로 720 은 그대로) 창을 꽉 채웁니다.
+//             기준 폭(4 : 3)보다 좁아지지 않고 WIDE_MAXIMUM_ASPECT 보다 넓어지지 않습니다. 모니터 프레임은 쓰지 않습니다.
 //   1280 × 800, 기준 해상도 그대로입니다. (개발 확인용)
 //   640 × 400 , 절반입니다. (개발 확인용)
 //
-// 설정 창은 앞의 둘만 고릅니다. PageUp / PageDown 은 개발 확인용으로 넷을 순환합니다.
+// 설정 창은 앞의 셋만 고릅니다. PageUp / PageDown 은 개발 확인용으로 다섯을 순환합니다.
 //==============================================================================
 const DISPLAY_MODES = [
 	{ id: "fit", width: REFERENCE_RESOLUTION_WIDTH, height: REFERENCE_RESOLUTION_HEIGHT, fitWindow: true, isInteger: false },
 	{ id: "integer", width: REFERENCE_RESOLUTION_WIDTH, height: REFERENCE_RESOLUTION_HEIGHT, fitWindow: true, isInteger: true },
+	{ id: "wide", width: REFERENCE_RESOLUTION_WIDTH, height: REFERENCE_RESOLUTION_HEIGHT, fitWindow: true, isInteger: false },
 	{ id: "native", width: REFERENCE_RESOLUTION_WIDTH, height: REFERENCE_RESOLUTION_HEIGHT, fitWindow: false, isInteger: false },
 	{ id: "half", width: REFERENCE_RESOLUTION_WIDTH / 2, height: REFERENCE_RESOLUTION_HEIGHT / 2, fitWindow: false, isInteger: false },
 ];
@@ -123,8 +128,13 @@ export function refreshDisplayPlacement() {
  * @returns { object } 창 안에 놓인 게임 화면의 자리와 크기입니다. (CSS px)
  */
 function placeGameScreen(displayMode, availableWidth, availableHeight, originLeft) {
-	const baseWidth = displayMode.id === "half" ? WINDOW_REFERENCE_WIDTH / 2 : WINDOW_REFERENCE_WIDTH;
-	const baseHeight = displayMode.id === "half" ? WINDOW_REFERENCE_HEIGHT / 2 : WINDOW_REFERENCE_HEIGHT;
+	let baseWidth = displayMode.id === "half" ? WINDOW_REFERENCE_WIDTH / 2 : WINDOW_REFERENCE_WIDTH;
+	let baseHeight = displayMode.id === "half" ? WINDOW_REFERENCE_HEIGHT / 2 : WINDOW_REFERENCE_HEIGHT;
+	if (displayMode.id === "wide") {
+		// 와이드는 모니터 그림이 없으므로 게임 화면이 곧 브라운관 화면입니다. 그 비율 그대로 창에 맞춥니다.
+		baseWidth = readScreenWidth();
+		baseHeight = REFERENCE_RESOLUTION_HEIGHT;
+	}
 	let monitorWidth = baseWidth;
 	let monitorHeight = baseHeight;
 	if (displayMode.fitWindow) {
@@ -175,6 +185,8 @@ export function applyDisplayMode(modeIndex) {
 	const padReserve = readVirtualPadReserve(windowWidth, windowHeight);
 	const availableWidth = windowWidth - padReserve.side * 2;
 	const availableHeight = windowHeight - padReserve.bottom;
+	// 그리는 폭을 먼저 정합니다. 와이드만 창 비율을 따르고 나머지는 기준 폭(4 : 3)입니다.
+	applyScreenWidth(viewManager, readModeScreenWidth(displayMode, availableWidth, availableHeight));
 	// 화면은 세 겹입니다. 창(브라우저) 안에 게임 화면(1280 × 800)이 놓이고, 그 안에 브라운관 화면(960 × 720)이 놓입니다.
 	// 화면 모드가 재는 것은 늘 가운데의 게임 화면이고, 그 바깥은 검은 띠입니다.
 	const gameScreenRect = placeGameScreen(displayMode, availableWidth, availableHeight, padReserve.side);
@@ -190,19 +202,21 @@ export function applyDisplayMode(modeIndex) {
 	canvas.style.position = "absolute";
 	canvas.style.imageRendering = "pixelated";
 	const isMonitorShown = isCrtOverlayActive();
+	const sourceWidth = readScreenWidth();
 	if (isMonitorShown) {
 		// 브라운관을 켜면 이 캔버스는 보이지 않고 덮개가 대신 보여 줍니다. 그러니 기준 크기 그대로 두어 1 : 1 로 그립니다.
-		canvas.style.width = REFERENCE_RESOLUTION_WIDTH + "px";
+		canvas.style.width = sourceWidth + "px";
 		canvas.style.height = REFERENCE_RESOLUTION_HEIGHT + "px";
 		canvas.style.left = "0px";
 		canvas.style.top = "0px";
 	}
 	else {
 		// 브라운관을 끄면 모니터 테두리가 없어진 만큼만 화면이 커집니다. 비율(4 : 3)은 그대로라 좌우에 검은 띠가 남습니다.
-		const widthScale = gameScreenRect.width / REFERENCE_RESOLUTION_WIDTH;
+		// (와이드는 그리는 폭이 창 비율을 따르므로 띠가 남지 않습니다)
+		const widthScale = gameScreenRect.width / sourceWidth;
 		const heightScale = gameScreenRect.height / REFERENCE_RESOLUTION_HEIGHT;
 		const screenScale = System.Math.min(widthScale, heightScale);
-		const screenWidth = System.Math.round(REFERENCE_RESOLUTION_WIDTH * screenScale);
+		const screenWidth = System.Math.round(sourceWidth * screenScale);
 		const screenHeight = System.Math.round(REFERENCE_RESOLUTION_HEIGHT * screenScale);
 		const screenLeft = gameScreenRect.left + (gameScreenRect.width - screenWidth) * 0.5;
 		const screenTop = gameScreenRect.top + (gameScreenRect.height - screenHeight) * 0.5;
@@ -217,4 +231,45 @@ export function applyDisplayMode(modeIndex) {
 	applyPixelFixedScale(viewManager);
 	targetEngine.resize();
 	syncCrtCanvas();
+}
+
+
+//==============================================================================
+// 그 모드의 그리는 폭. (와이드만 창 비율을 따르고 나머지는 기준 폭)
+//
+// 와이드는 세로 720 을 두고 가로를 창 비율만큼 넓힙니다. 기준 폭(4 : 3)보다 좁은 창에서는 기준 폭을 쓰고
+// (위아래에 띠), WIDE_MAXIMUM_ASPECT 보다 넓은 창에서는 그 비율에서 멈춥니다. (좌우에 띠)
+//==============================================================================
+/**
+ * @param { object } displayMode
+ * @param { number } availableWidth
+ * @param { number } availableHeight
+ * @returns { number }
+ */
+function readModeScreenWidth(displayMode, availableWidth, availableHeight) {
+	if (displayMode.id !== "wide" || availableWidth <= 0 || availableHeight <= 0) {
+		return REFERENCE_RESOLUTION_WIDTH;
+	}
+	const maximumWidth = System.Math.round(REFERENCE_RESOLUTION_HEIGHT * WIDE_MAXIMUM_ASPECT);
+	const windowWidth = System.Math.round(REFERENCE_RESOLUTION_HEIGHT * availableWidth / availableHeight);
+	return System.Math.max(REFERENCE_RESOLUTION_WIDTH, System.Math.min(maximumWidth, windowWidth));
+}
+
+
+//==============================================================================
+// 그리는 폭 바꾸기. (엔진의 기준 해상도, 브라운관 필터의 원본 크기, 화면 코드가 읽는 폭을 함께)
+//==============================================================================
+/**
+ * @param { object } viewManager
+ * @param { number } width
+ */
+function applyScreenWidth(viewManager, width) {
+	const currentWidth = readScreenWidth();
+	if (width === currentWidth) {
+		return;
+	}
+	setScreenWidth(width);
+	const referenceResolutionSize = Vector2.create(width, REFERENCE_RESOLUTION_HEIGHT);
+	viewManager.applyReferenceResolutionSize(referenceResolutionSize);
+	setCrtSourceSize(width, REFERENCE_RESOLUTION_HEIGHT);
 }

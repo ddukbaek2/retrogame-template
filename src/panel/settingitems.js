@@ -20,6 +20,44 @@ import { DisplayModeOptions, MonitorColorOptions, CurveLevelOptions } from "../g
 
 
 //==============================================================================
+// 모니터 프레임이 실제로 보이는지. (켜 두었어도 와이드에서는 쓸 수 없습니다, 모니터 그림의 화면 구멍이 4 : 3 입니다)
+//==============================================================================
+/**
+ * @param { object } settings
+ * @returns { boolean }
+ */
+export function isMonitorFrameShown(settings) {
+	return settings.isMonitorFrameEnabled !== false && settings.displayMode !== "wide";
+}
+
+
+//==============================================================================
+// 모니터 프레임 칸의 값 열쇠와 말. (와이드에서는 고를 수 없습니다)
+//==============================================================================
+/**
+ * @param { object } settings
+ * @returns { string }
+ */
+function readFrameKey(settings) {
+	if (settings.displayMode === "wide") {
+		return "unavailable";
+	}
+	return settings.isMonitorFrameEnabled === false ? "off" : "on";
+}
+
+/**
+ * @param { object } settings
+ * @returns { string }
+ */
+function readFrameText(settings) {
+	if (settings.displayMode === "wide") {
+		return "쓸 수 없음";
+	}
+	return settings.isMonitorFrameEnabled === false ? "끔" : "켬";
+}
+
+
+//==============================================================================
 // 볼록 효과 칸의 값 열쇠. (모니터 프레임을 끄면 고를 수 없습니다)
 //==============================================================================
 /**
@@ -27,7 +65,7 @@ import { DisplayModeOptions, MonitorColorOptions, CurveLevelOptions } from "../g
  * @returns { string }
  */
 export function readCurveKey(settings) {
-	if (settings.isMonitorFrameEnabled === false) {
+	if (!isMonitorFrameShown(settings)) {
 		return "unavailable";
 	}
 	return settings.curveLevel;
@@ -42,7 +80,7 @@ export function readCurveKey(settings) {
  * @returns { string }
  */
 export function readCurveText(settings) {
-	if (settings.isMonitorFrameEnabled === false) {
+	if (!isMonitorFrameShown(settings)) {
 		return "쓸 수 없음";
 	}
 	for (const option of CurveLevelOptions) {
@@ -93,7 +131,7 @@ export function createFrameSettingItems(settings, isEraseArmed) {
 		{ id: "sound", valueKey: settings.isSoundEnabled ? "on" : "off", label: "효과음", valueText: settings.isSoundEnabled ? "켬" : "끔" },
 		{ id: "music", valueKey: isMusicOn ? "on" : "off", label: "배경음", valueText: isMusicOn ? "켬" : "끔" },
 		{ id: "display", valueKey: settings.displayMode, label: "화면 크기", valueText: displayModeName },
-		{ id: "frame", valueKey: settings.isMonitorFrameEnabled === false ? "off" : "on", label: "모니터 프레임", valueText: settings.isMonitorFrameEnabled === false ? "끔" : "켬" },
+		{ id: "frame", valueKey: readFrameKey(settings), label: "모니터 프레임", valueText: readFrameText(settings) },
 		{ id: "curve", valueKey: readCurveKey(settings), label: "볼록 효과", valueText: readCurveText(settings) },
 		{ id: "grid", label: "볼록 확인 격자" },
 		{ id: "colors", valueKey: settings.monitorColors, label: "색상 비트", valueText: monitorColorName },
@@ -163,13 +201,17 @@ export function handleFrameSettingItem(scene, itemId, direction, eraseState) {
 			return true;
 		}
 		case "frame": {
+			// 와이드에서는 모니터 프레임을 쓸 수 없습니다.
+			if (settings.displayMode === "wide") {
+				return true;
+			}
 			settings.isMonitorFrameEnabled = settings.isMonitorFrameEnabled === false;
 			scene.applySettings();
 			return true;
 		}
 		case "curve": {
 			// 모니터 프레임이 꺼져 있으면 볼록 효과를 쓸 수 없습니다.
-			if (settings.isMonitorFrameEnabled === false) {
+			if (!isMonitorFrameShown(settings)) {
 				return true;
 			}
 			let optionIndex = CurveLevelOptions.length - 1;

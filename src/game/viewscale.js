@@ -3,7 +3,7 @@
 //==============================================================================
 import { ViewScaleMode } from "../../libs/vanilla.js/src/core/viewmanager.js";
 import { setTextAntialiasEnabled } from "../../libs/vanilla.js/src/core/graphic/textstringtexturecache.js";
-import { REFERENCE_RESOLUTION_WIDTH } from "./constants.js";
+import { readScreenWidth } from "./screensize.js";
 
 
 //==============================================================================
@@ -35,7 +35,8 @@ export function applyPixelFixedScale(viewManager) {
 	}
 	// 백버퍼는 캔버스의 CSS 크기에 이 비율을 곱한 값입니다. 기준 해상도가 나오도록 잡습니다.
 	// 창이 기준보다 작으면 1 을 넘어가는데, 엔진이 상한으로만 쓰므로 그때는 줄여 그립니다.
-	const maxRenderPixelRatio = REFERENCE_RESOLUTION_WIDTH / canvasNativeSize.x;
+	const screenWidth = readScreenWidth();
+	const maxRenderPixelRatio = screenWidth / canvasNativeSize.x;
 	viewManager.setViewScaleMode(ViewScaleMode.stretchWidth);
 	viewManager.setMaxRenderPixelRatio(maxRenderPixelRatio);
 }
